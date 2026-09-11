@@ -19,7 +19,7 @@ internal static class Program
         ("3", "Fetch latest telemetry values"),
         ("4", "Fetch 7-day historical telemetry with where.time"),
         ("5", "Fetch 30-day chunked historical telemetry"),
-        ("6", "Show telemetry query builder examples"),
+        ("6", "Show telemetry query builder examples (generic or discovered source)"),
         ("7", "Run complete walkthrough"),
         ("0", "Exit"),
     ];
@@ -87,7 +87,7 @@ internal static class Program
                     switch (selection)
                     {
                         case "1":
-                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            authentication = await AuthenticateAsync(scope.ServiceProvider, exampleConfig, cancellationTokenSource.Token).ConfigureAwait(false);
                             Console.WriteLine(ResponseFormatter.FormatAuthentication(authentication));
                             break;
 
@@ -128,7 +128,7 @@ internal static class Program
                             break;
 
                         case "7":
-                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            authentication = await AuthenticateAsync(scope.ServiceProvider, exampleConfig, cancellationTokenSource.Token).ConfigureAwait(false);
                             Console.WriteLine(ResponseFormatter.FormatAuthentication(authentication));
                             discovery = await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
                             Console.WriteLine(ResponseFormatter.FormatDiscovery(discovery));
@@ -148,6 +148,10 @@ internal static class Program
                 }
                 catch (EnirisAuthError authError)
                 {
+                    authentication = null;
+                    discovery = null;
+                    latestValues = null;
+                    historicalValues = null;
                     logger.LogError(authError, "Authentication failed");
                     Console.WriteLine($"Authentication failed: {authError.Message}");
                 }
@@ -183,7 +187,6 @@ internal static class Program
         var username = ResolveRequiredValue("Eniris username", config.Username);
         var password = ResolveRequiredValue("Eniris password", config.Password, secret: true);
         config.Username = username;
-        config.Password = password;
 
         var example = serviceProvider.GetRequiredService<AuthenticationExample>();
         return await example.RunAsync(username, password, cancellationToken).ConfigureAwait(false);
@@ -224,6 +227,11 @@ internal static class Program
     {
         var example = serviceProvider.GetRequiredService<TelemetryQueryBuilderExample>();
         var source = discovery is null ? null : SelectTelemetryTarget(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"])?.Source;
+        if (source is null)
+        {
+            Console.WriteLine("No discovered telemetry source is available yet; showing generic sample queries.");
+        }
+
         foreach (var (name, query) in example.BuildExamples(source))
         {
             Console.WriteLine(ResponseFormatter.FormatQuery(name, query));
@@ -264,7 +272,7 @@ internal static class Program
 
     private static string ResolveRequiredValue(string label, string? currentValue, bool secret = false)
     {
-        if (!string.IsNullOrWhiteSpace(currentValue) && Console.IsInputRedirected)
+        if (!string.IsNullOrWhiteSpace(currentValue))
         {
             return currentValue;
         }

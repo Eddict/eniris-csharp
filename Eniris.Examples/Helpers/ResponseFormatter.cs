@@ -22,10 +22,10 @@ public static class ResponseFormatter
         return string.Join(Environment.NewLine,
         [
             "Authentication flow complete:",
-            $"  Refresh token (login): {Shorten(summary.RefreshToken)}",
-            $"  Access token:          {Shorten(summary.AccessToken)}",
-            $"  Refresh token (renew): {Shorten(summary.RenewedRefreshToken)}",
-            $"  Access token (renew):  {Shorten(summary.RenewedAccessToken)}",
+            $"  Refresh token (login): issued ({summary.RefreshToken.Length} chars)",
+            $"  Access token:          issued ({summary.AccessToken.Length} chars)",
+            $"  Refresh token (renew): issued ({summary.RenewedRefreshToken.Length} chars)",
+            $"  Access token (renew):  issued ({summary.RenewedAccessToken.Length} chars)",
         ]);
     }
 
@@ -129,6 +129,4 @@ public static class ResponseFormatter
             IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
             _ => value.ToString() ?? string.Empty,
         };
-
-    private static string Shorten(string value) => value.Length <= 24 ? value : $"{value[..12]}...{value[^8..]}";
 }
