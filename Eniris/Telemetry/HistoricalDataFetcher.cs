@@ -99,7 +99,7 @@ public sealed class HistoricalDataFetcher
             var query = TelemetryQueryBuilder.BuildHistoricalQuery(source, requestQuery, currentFrom, currentTo);
             if (query is null)
             {
-                break;
+                throw new InvalidOperationException($"Unable to build a historical telemetry query for source '{source.Key}'.");
             }
 
             _logger.LogInformation(

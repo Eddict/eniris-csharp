@@ -191,7 +191,7 @@ public static class TelemetryResponseParser
             {
                 if (DateTimeOffset.TryParse(stringValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
                 {
-                    return parsed;
+                    return parsed.ToUniversalTime();
                 }
             }
 
@@ -222,7 +222,7 @@ public static class TelemetryResponseParser
             if (value.TryGetValue<string>(out var stringValue) &&
                 DateTimeOffset.TryParse(stringValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
             {
-                return parsed;
+                return parsed.ToUniversalTime();
             }
 
             if (value.TryGetValue<long>(out var longValue))

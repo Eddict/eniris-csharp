@@ -102,6 +102,7 @@ public static class TelemetryQueryBuilder
                 @namespace["retentionPolicy"] = source.RetentionPolicy;
             }
 
+            fromClause["retentionPolicy"] = source.RetentionPolicy;
             fromClause["namespace"] = @namespace;
         }
         else
