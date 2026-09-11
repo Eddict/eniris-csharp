@@ -37,6 +37,26 @@ var companies = await client.CompaniesAsync();
 
 For telemetry discovery, parse devices with `EnirisDevice.ParseMany(...)`, group them with `EnirisController.GroupControllers(...)`, build request payloads with `TelemetryQueryBuilder`, and parse responses with `TelemetryResponseParser`.
 
+## Example console application
+
+A runnable example app lives in `Eniris.Examples/` and demonstrates:
+
+- authentication (login, access-token exchange, refresh-token renewal)
+- companies, roles, monitors, device discovery, and controller grouping
+- latest telemetry queries for common power and voltage fields
+- historical telemetry queries over 7-day and 30-day ranges
+- `where.time` query construction, namespace examples, and aggregation examples
+
+Run it with:
+
+```bash
+dotnet run --project Eniris.Examples/Eniris.Examples.csproj
+```
+
+Configuration can come from `Eniris.Examples/appsettings.json` or environment variables such as `Eniris__Username`, `Eniris__Password`, `Eniris__AuthBaseUri`, and `Eniris__ApiBaseUri`.
+
+Expected console output includes controller/device hierarchy, latest telemetry timestamps and values, and historical row counts with covered date ranges.
+
 ```csharp
 using Eniris.Data;
 using Eniris.Models;

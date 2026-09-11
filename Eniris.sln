@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.10.12201.205 stable
+VisualStudioVersion = 18.10.12201.205
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Eniris", "Eniris\Eniris.csproj", "{8928A3BC-E5E9-42F4-A5FA-2197F573A26E}"
 EndProject
@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\api-1.json = Documentation\api-1.json
 		Documentation\api-1.yaml = Documentation\api-1.yaml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Eniris.Examples", "Eniris.Examples\Eniris.Examples.csproj", "{54994D64-FB0D-4924-BED1-B08C04FFA880}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,18 @@ Global
 		{8928A3BC-E5E9-42F4-A5FA-2197F573A26E}.Release|x64.Build.0 = Release|Any CPU
 		{8928A3BC-E5E9-42F4-A5FA-2197F573A26E}.Release|x86.ActiveCfg = Release|Any CPU
 		{8928A3BC-E5E9-42F4-A5FA-2197F573A26E}.Release|x86.Build.0 = Release|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Debug|x64.Build.0 = Debug|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Debug|x86.Build.0 = Debug|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Release|x64.ActiveCfg = Release|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Release|x64.Build.0 = Release|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Release|x86.ActiveCfg = Release|Any CPU
+		{54994D64-FB0D-4924-BED1-B08C04FFA880}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
