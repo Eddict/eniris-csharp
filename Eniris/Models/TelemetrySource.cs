@@ -67,13 +67,28 @@ public sealed class TelemetrySource
     {
         get
         {
-            var scope = Database
-                ?? ReadString(Namespace?["value"])
-                ?? ReadString(Namespace?["bucket"])
-                ?? "default";
+            var scope = Database ?? BuildNamespaceScope(Namespace) ?? "default";
             var tags = string.Join(",", Tags.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => $"{pair.Key}={pair.Value}"));
             return $"{Measurement}:{RetentionPolicy}:{scope}:{tags}";
         }
+    }
+
+    private static string? BuildNamespaceScope(JsonObject? @namespace)
+    {
+        if (@namespace is null || @namespace.Count == 0)
+        {
+            return null;
+        }
+
+        var parts = @namespace
+            .Where(static pair => pair.Value is not null)
+            .Select(static pair => (pair.Key, Value: ReadString(pair.Value)))
+            .Where(static pair => !string.IsNullOrWhiteSpace(pair.Value))
+            .OrderBy(static pair => pair.Key, StringComparer.Ordinal)
+            .Select(static pair => $"{pair.Key}={pair.Value}")
+            .ToArray();
+
+        return parts.Length == 0 ? null : string.Join(",", parts);
     }
 
     private static string? ReadString(JsonNode? node)
