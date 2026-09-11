@@ -1,0 +1,279 @@
+#nullable enable
+using Eniris.Api;
+using Eniris.Examples.Examples;
+using Eniris.Examples.Helpers;
+using Eniris.Examples.Models;
+using Eniris.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace Eniris.Examples;
+
+internal static class Program
+{
+    private static readonly IReadOnlyList<(string Key, string Description)> MenuItems =
+    [
+        ("1", "Run authentication flow"),
+        ("2", "Discover companies, roles, monitors, devices, and controllers"),
+        ("3", "Fetch latest telemetry values"),
+        ("4", "Fetch 7-day historical telemetry with where.time"),
+        ("5", "Fetch 30-day chunked historical telemetry"),
+        ("6", "Show telemetry query builder examples"),
+        ("7", "Run complete walkthrough"),
+        ("0", "Exit"),
+    ];
+
+    public static async Task<int> Main(string[] args)
+    {
+        using var cancellationTokenSource = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            cancellationTokenSource.Cancel();
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var exampleConfig = configuration.GetSection("Eniris").Get<ExampleConfig>() ?? new ExampleConfig();
+
+        var services = new ServiceCollection();
+        services.AddSingleton(exampleConfig);
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging(builder =>
+        {
+            builder.ClearProviders();
+            builder.AddConfiguration(configuration.GetSection("Logging"));
+            builder.AddSimpleConsole(options =>
+            {
+                options.SingleLine = true;
+                options.TimestampFormat = "HH:mm:ss ";
+            });
+        });
+        services.AddEniris(exampleConfig.ApplyTo);
+        services.AddScoped<AuthenticationExample>();
+        services.AddScoped<DeviceDiscoveryExample>();
+        services.AddScoped<LatestTelemetryExample>();
+        services.AddScoped<HistoricalTelemetryExample>();
+        services.AddScoped<TelemetryQueryBuilderExample>();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        using var scope = provider.CreateScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
+
+        AuthenticationSummary? authentication = null;
+        DeviceDiscoverySummary? discovery = null;
+        IReadOnlyList<Eniris.Telemetry.SensorValue>? latestValues = null;
+        IReadOnlyList<Eniris.Data.TelemetryRecord>? historicalValues = null;
+
+        var menu = new ConsoleMenu("Eniris Examples", MenuItems);
+
+        try
+        {
+            while (!cancellationTokenSource.IsCancellationRequested)
+            {
+                var selection = menu.PromptSelection();
+                if (selection == "0")
+                {
+                    return 0;
+                }
+
+                try
+                {
+                    switch (selection)
+                    {
+                        case "1":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatAuthentication(authentication));
+                            break;
+
+                        case "2":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            discovery = await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatDiscovery(discovery));
+                            break;
+
+                        case "3":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            latestValues = await FetchLatestAsync(scope.ServiceProvider, discovery, exampleConfig, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatLatestTelemetry(latestValues));
+                            break;
+
+                        case "4":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            var weekRange = DateRangeHelper.LastDays(7);
+                            historicalValues = await FetchHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, weekRange, chunked: false, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatHistorical(historicalValues, weekRange));
+                            break;
+
+                        case "5":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            var monthRange = DateRangeHelper.LastDays(30);
+                            historicalValues = await FetchHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, monthRange, chunked: true, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatHistorical(historicalValues, monthRange));
+                            break;
+
+                        case "6":
+                            discovery ??= authentication is null
+                                ? null
+                                : await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            DisplayQueries(scope.ServiceProvider, discovery);
+                            break;
+
+                        case "7":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatAuthentication(authentication));
+                            discovery = await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatDiscovery(discovery));
+                            latestValues = await FetchLatestAsync(scope.ServiceProvider, discovery, exampleConfig, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatLatestTelemetry(latestValues));
+                            var walkthroughRange = DateRangeHelper.LastDays(7);
+                            historicalValues = await FetchHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, walkthroughRange, chunked: false, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatHistorical(historicalValues, walkthroughRange));
+                            DisplayQueries(scope.ServiceProvider, discovery);
+                            break;
+                    }
+                }
+                catch (EnirisRateLimitError rateLimitError)
+                {
+                    logger.LogWarning(rateLimitError, "Eniris rate limit encountered. RetryAfter={RetryAfter}", rateLimitError.RetryAfter);
+                    Console.WriteLine($"Rate limit encountered. Retry after: {rateLimitError.RetryAfter?.ToString() ?? "unspecified"}.");
+                }
+                catch (EnirisAuthError authError)
+                {
+                    logger.LogError(authError, "Authentication failed");
+                    Console.WriteLine($"Authentication failed: {authError.Message}");
+                }
+                catch (EnirisApiError apiError)
+                {
+                    logger.LogError(apiError, "Eniris API call failed");
+                    Console.WriteLine($"Eniris API call failed: {apiError.Message}");
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    logger.LogError(exception, "Unexpected example failure");
+                    Console.WriteLine($"Unexpected error: {exception.Message}");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogInformation("Example execution cancelled");
+        }
+
+        return 0;
+    }
+
+    private static async Task<AuthenticationSummary> EnsureAuthenticatedAsync(
+        IServiceProvider serviceProvider,
+        ExampleConfig config,
+        AuthenticationSummary? current,
+        CancellationToken cancellationToken)
+        => current ?? await AuthenticateAsync(serviceProvider, config, cancellationToken).ConfigureAwait(false);
+
+    private static async Task<AuthenticationSummary> AuthenticateAsync(IServiceProvider serviceProvider, ExampleConfig config, CancellationToken cancellationToken)
+    {
+        var username = ResolveRequiredValue("Eniris username", config.Username);
+        var password = ResolveRequiredValue("Eniris password", config.Password, secret: true);
+        config.Username = username;
+        config.Password = password;
+
+        var example = serviceProvider.GetRequiredService<AuthenticationExample>();
+        return await example.RunAsync(username, password, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<DeviceDiscoverySummary> DiscoverAsync(IServiceProvider serviceProvider, CancellationToken cancellationToken)
+        => await serviceProvider.GetRequiredService<DeviceDiscoveryExample>().RunAsync(cancellationToken).ConfigureAwait(false);
+
+    private static async Task<IReadOnlyList<Eniris.Telemetry.SensorValue>> FetchLatestAsync(
+        IServiceProvider serviceProvider,
+        DeviceDiscoverySummary discovery,
+        ExampleConfig config,
+        CancellationToken cancellationToken)
+    {
+        var example = serviceProvider.GetRequiredService<LatestTelemetryExample>();
+        return await example.RunAsync(discovery.Devices, config.PreferredTelemetryFields, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<IReadOnlyList<Eniris.Data.TelemetryRecord>> FetchHistoricalAsync(
+        IServiceProvider serviceProvider,
+        DeviceDiscoverySummary discovery,
+        ExampleConfig config,
+        ExampleDateRange range,
+        bool chunked,
+        CancellationToken cancellationToken)
+    {
+        var target = SelectTelemetryTarget(discovery.Devices, config.PreferredTelemetryFields)
+            ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
+
+        var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
+        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
+        return chunked
+            ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
+            : await example.RunDirectRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void DisplayQueries(IServiceProvider serviceProvider, DeviceDiscoverySummary? discovery)
+    {
+        var example = serviceProvider.GetRequiredService<TelemetryQueryBuilderExample>();
+        var source = discovery is null ? null : SelectTelemetryTarget(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"])?.Source;
+        foreach (var (name, query) in example.BuildExamples(source))
+        {
+            Console.WriteLine(ResponseFormatter.FormatQuery(name, query));
+        }
+    }
+
+    private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)
+    {
+        foreach (var device in devices.Where(static candidate => candidate.TelemetrySources.Count > 0))
+        {
+            foreach (var source in device.TelemetrySources)
+            {
+                if (SelectFields(source, requestedFields).Count > 0)
+                {
+                    return (device, source);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> SelectFields(TelemetrySource source, IReadOnlyList<string> requestedFields)
+    {
+        var availableFields = requestedFields
+            .Where(static field => !string.IsNullOrWhiteSpace(field))
+            .Where(field => source.Fields is null || source.Fields.Contains(field, StringComparer.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (availableFields.Length > 0)
+        {
+            return availableFields;
+        }
+
+        return source.Fields?.Take(2).ToArray() ?? [];
+    }
+
+    private static string ResolveRequiredValue(string label, string? currentValue, bool secret = false)
+    {
+        if (!string.IsNullOrWhiteSpace(currentValue) && Console.IsInputRedirected)
+        {
+            return currentValue;
+        }
+
+        if (Console.IsInputRedirected && string.IsNullOrWhiteSpace(currentValue))
+        {
+            throw new InvalidOperationException($"{label} is required. Set it in appsettings.json or as an environment variable before running non-interactively.");
+        }
+
+        return ConsoleMenu.PromptRequired(label, currentValue, secret);
+    }
+}
