@@ -149,24 +149,32 @@ public static class TelemetryQueryBuilder
         };
 
     private static JsonObject? MergeWhere(JsonObject? first, JsonObject? second)
+        => MergeNode(first, second) as JsonObject;
+
+    private static JsonNode? MergeNode(JsonNode? first, JsonNode? second)
     {
         if (first is null)
         {
-            return second is null ? null : (JsonObject)second.DeepClone();
+            return second?.DeepClone();
         }
 
-        var merged = (JsonObject)first.DeepClone();
         if (second is null)
         {
+            return first.DeepClone();
+        }
+
+        if (first is JsonObject firstObject && second is JsonObject secondObject)
+        {
+            var merged = (JsonObject)firstObject.DeepClone();
+            foreach (var pair in secondObject)
+            {
+                merged[pair.Key] = MergeNode(merged[pair.Key], pair.Value);
+            }
+
             return merged;
         }
 
-        foreach (var pair in second)
-        {
-            merged[pair.Key] = pair.Value?.DeepClone();
-        }
-
-        return merged;
+        return second.DeepClone();
     }
 
     private static string NormalizeTimestamp(DateTime value) =>

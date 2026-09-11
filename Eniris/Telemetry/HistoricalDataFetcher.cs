@@ -109,9 +109,9 @@ public sealed class HistoricalDataFetcher
                 currentFrom,
                 currentTo);
 
-            var request = new TelemetryRequest(device, source, query);
-            var responses = await ExecuteWithRetryAsync([query], cancellationToken).ConfigureAwait(false);
-            records.AddRange(TelemetryResponseParser.ParseHistorical([request], responses));
+            var requests = new[] { new TelemetryRequest(device, source, query) };
+            var responses = await ExecuteWithRetryAsync(requests, cancellationToken).ConfigureAwait(false);
+            records.AddRange(TelemetryResponseParser.ParseHistorical(requests, responses));
 
             currentFrom = currentTo;
         }
@@ -158,7 +158,7 @@ public sealed class HistoricalDataFetcher
     }
 
     private async Task<IReadOnlyList<JsonObject>> ExecuteWithRetryAsync(
-        IReadOnlyList<JsonObject> queries,
+        IReadOnlyList<TelemetryRequest> requests,
         CancellationToken cancellationToken)
     {
         var delay = DefaultRetryDelay;
@@ -168,7 +168,7 @@ public sealed class HistoricalDataFetcher
 
             try
             {
-                return await _telemetryAsync(queries, cancellationToken).ConfigureAwait(false);
+                return await _telemetryAsync(requests.Select(static request => request.Query).ToArray(), cancellationToken).ConfigureAwait(false);
             }
             catch (EnirisRateLimitError exception) when (attempt < MaxRetryAttempts)
             {
