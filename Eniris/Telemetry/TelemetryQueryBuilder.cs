@@ -41,11 +41,9 @@ public static class TelemetryQueryBuilder
         else if (source.Namespace is not null)
         {
             var @namespace = (JsonObject)source.Namespace.DeepClone();
-            if (string.Equals(ReadString(@namespace["version"]), "1", StringComparison.Ordinal))
-            {
-                @namespace["retentionPolicy"] = source.RetentionPolicy;
-            }
+            @namespace["retentionPolicy"] = source.RetentionPolicy;
 
+            fromClause["retentionPolicy"] = source.RetentionPolicy;
             fromClause["namespace"] = @namespace;
         }
         else

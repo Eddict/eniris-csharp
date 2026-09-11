@@ -51,8 +51,9 @@ public static class EnirisServiceCollectionExtensions
         services.AddScoped<EnirisClient>(static serviceProvider =>
         {
             var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            var authClient = serviceProvider.GetRequiredService<IEnirisAuthClient>();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            return new EnirisClient(factory, loggerFactory);
+            return new EnirisClient(authClient, factory.CreateClient(EnirisClient.ApiHttpClientName), loggerFactory);
         });
         services.AddScoped<IEnirisClient>(static serviceProvider => serviceProvider.GetRequiredService<EnirisClient>());
 

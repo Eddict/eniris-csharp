@@ -27,7 +27,8 @@ var services = new ServiceCollection()
     });
 
 var provider = services.BuildServiceProvider();
-var client = provider.GetRequiredService<IEnirisClient>();
+using var scope = provider.CreateScope();
+var client = scope.ServiceProvider.GetRequiredService<IEnirisClient>();
 
 var refreshToken = await client.LoginAsync("user@example.com", "password");
 var companies = await client.CompaniesAsync();

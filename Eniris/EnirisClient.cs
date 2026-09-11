@@ -28,26 +28,31 @@ public sealed class EnirisClient : IEnirisClient
     private EnirisApiClient? _apiClient;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="EnirisClient"/> class using a supplied auth client and API HTTP client.
+    /// </summary>
+    public EnirisClient(IEnirisAuthClient authClient, HttpClient apiHttpClient, ILoggerFactory? loggerFactory = null)
+    {
+        _authClient = authClient ?? throw new ArgumentNullException(nameof(authClient));
+        _apiHttpClient = apiHttpClient ?? throw new ArgumentNullException(nameof(apiHttpClient));
+        _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="EnirisClient"/> class using manually supplied HTTP clients.
     /// </summary>
     public EnirisClient(HttpClient authHttpClient, HttpClient apiHttpClient, ILoggerFactory? loggerFactory = null)
+        : this(
+            new EnirisAuthClient(authHttpClient ?? throw new ArgumentNullException(nameof(authHttpClient)), (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<EnirisAuthClient>()),
+            apiHttpClient,
+            loggerFactory)
     {
-        ArgumentNullException.ThrowIfNull(authHttpClient);
-        ArgumentNullException.ThrowIfNull(apiHttpClient);
-
-        _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-        _authClient = new EnirisAuthClient(authHttpClient, _loggerFactory.CreateLogger<EnirisAuthClient>());
-        _apiHttpClient = apiHttpClient;
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EnirisClient"/> class from dependency injection.
     /// </summary>
     public EnirisClient(IHttpClientFactory httpClientFactory, ILoggerFactory? loggerFactory = null)
-        : this(
-            (httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory))).CreateClient(AuthHttpClientName),
-            httpClientFactory.CreateClient(ApiHttpClientName),
-            loggerFactory)
+        : this((httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory))).CreateClient(AuthHttpClientName), httpClientFactory.CreateClient(ApiHttpClientName), loggerFactory)
     {
     }
 

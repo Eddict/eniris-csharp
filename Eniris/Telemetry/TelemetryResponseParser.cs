@@ -51,7 +51,7 @@ public static class TelemetryResponseParser
                     continue;
                 }
 
-                if (rows[^1] is not JsonArray row)
+                if (SelectLatestRow(columns, rows) is not JsonArray row)
                 {
                     continue;
                 }
@@ -86,6 +86,40 @@ public static class TelemetryResponseParser
             ? []
             : columns.Select(ReadString).Where(static value => !string.IsNullOrWhiteSpace(value)).Select(static value => value!).ToArray();
 
+    private static JsonArray? SelectLatestRow(IReadOnlyList<string> columns, JsonArray rows)
+    {
+        if (rows.Count == 0)
+        {
+            return null;
+        }
+
+        var timeIndex = columns.ToList().IndexOf("time");
+        if (timeIndex < 0)
+        {
+            return rows[^1] as JsonArray;
+        }
+
+        JsonArray? latestRow = null;
+        DateTimeOffset? latestTimestamp = null;
+        foreach (var candidate in rows.OfType<JsonArray>())
+        {
+            var timestamp = ExtractTimestampValue(timeIndex, candidate);
+            if (timestamp is null)
+            {
+                latestRow ??= candidate;
+                continue;
+            }
+
+            if (latestTimestamp is null || timestamp > latestTimestamp)
+            {
+                latestTimestamp = timestamp;
+                latestRow = candidate;
+            }
+        }
+
+        return latestRow ?? rows[^1] as JsonArray;
+    }
+
     private static string? ExtractTimestamp(IReadOnlyList<string> columns, JsonArray row)
     {
         var timeIndex = columns.ToList().IndexOf("time");
@@ -110,6 +144,36 @@ public static class TelemetryResponseParser
             if (value.TryGetValue<double>(out var doubleValue))
             {
                 return DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(doubleValue, CultureInfo.InvariantCulture)).UtcDateTime.ToString("O");
+            }
+        }
+
+        return null;
+    }
+
+    private static DateTimeOffset? ExtractTimestampValue(int timeIndex, JsonArray row)
+    {
+        if (timeIndex < 0 || timeIndex >= row.Count)
+        {
+            return null;
+        }
+
+        var node = row[timeIndex];
+        if (node is JsonValue value)
+        {
+            if (value.TryGetValue<string>(out var stringValue) &&
+                DateTimeOffset.TryParse(stringValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+            {
+                return parsed;
+            }
+
+            if (value.TryGetValue<long>(out var longValue))
+            {
+                return DateTimeOffset.FromUnixTimeMilliseconds(longValue);
+            }
+
+            if (value.TryGetValue<double>(out var doubleValue))
+            {
+                return DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(doubleValue, CultureInfo.InvariantCulture));
             }
         }
 
