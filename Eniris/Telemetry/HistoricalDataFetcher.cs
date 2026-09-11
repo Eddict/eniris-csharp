@@ -127,6 +127,7 @@ public sealed class HistoricalDataFetcher
         string[] fields,
         DateTime from,
         DateTime to,
+        TimeSpan? chunkSize = null,
         int maxConcurrency = 3,
         CancellationToken cancellationToken = default)
     {
@@ -144,7 +145,7 @@ public sealed class HistoricalDataFetcher
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var results = await FetchAsync(item.device, item.source, fields, from, to, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var results = await FetchAsync(item.device, item.source, fields, from, to, chunkSize, cancellationToken).ConfigureAwait(false);
                 return results.ToArray();
             }
             finally

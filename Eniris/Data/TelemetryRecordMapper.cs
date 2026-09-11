@@ -22,6 +22,7 @@ public static class TelemetryRecordMapper
         ArgumentNullException.ThrowIfNull(sensorValue);
         ArgumentNullException.ThrowIfNull(device);
         ArgumentNullException.ThrowIfNull(source);
+        var timestamp = sensorValue.Timestamp ?? throw new InvalidOperationException("A telemetry timestamp is required to map a record for persistence.");
 
         return new TelemetryRecord
         {
@@ -33,7 +34,7 @@ public static class TelemetryRecordMapper
             Value = sensorValue.Value,
             Unit = GetUnit(sensorValue.Key.Field),
             DeviceType = string.IsNullOrWhiteSpace(device.NodeType) ? null : device.NodeType,
-            Timestamp = sensorValue.Timestamp?.UtcDateTime ?? DateTime.UtcNow,
+            Timestamp = timestamp.UtcDateTime,
             RecordedAt = DateTime.UtcNow,
         };
     }
