@@ -79,8 +79,16 @@ public sealed class EnirisApiClient : IEnirisApiClient
     public void UpdateRefreshToken(string refreshToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
-        _refreshToken = refreshToken;
-        _accessToken = null;
+        _tokenLock.Wait();
+        try
+        {
+            _refreshToken = refreshToken;
+            _accessToken = null;
+        }
+        finally
+        {
+            _tokenLock.Release();
+        }
     }
 
     /// <inheritdoc />

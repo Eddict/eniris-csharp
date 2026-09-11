@@ -48,12 +48,13 @@ public static class EnirisServiceCollectionExtensions
             return new EnirisAuthClient(factory.CreateClient(EnirisClient.AuthHttpClientName), logger);
         });
 
-        services.AddTransient<IEnirisClient>(static serviceProvider =>
+        services.AddScoped<EnirisClient>(static serviceProvider =>
         {
             var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
             return new EnirisClient(factory, loggerFactory);
         });
+        services.AddScoped<IEnirisClient>(static serviceProvider => serviceProvider.GetRequiredService<EnirisClient>());
 
         return services;
     }

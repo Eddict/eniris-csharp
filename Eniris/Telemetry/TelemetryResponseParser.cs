@@ -51,7 +51,7 @@ public static class TelemetryResponseParser
                     continue;
                 }
 
-                if (rows[0] is not JsonArray row)
+                if (rows[^1] is not JsonArray row)
                 {
                     continue;
                 }
