@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using Eniris.Configuration;
+using Eniris.Data;
 using Eniris.Models;
 
 namespace Eniris.Telemetry;
@@ -12,16 +13,70 @@ namespace Eniris.Telemetry;
 public static class TelemetryResponseParser
 {
     /// <summary>
-    /// Parses telemetry responses keyed by request statement id.
+    /// Parses latest-value telemetry responses keyed by request statement id.
     /// </summary>
-    public static IReadOnlyDictionary<TelemetrySensorKey, TelemetrySensorValue> ParseResponses(
+    public static IEnumerable<SensorValue> Parse(
         IReadOnlyList<TelemetryRequest> requests,
         IEnumerable<JsonObject> responses)
     {
         ArgumentNullException.ThrowIfNull(requests);
         ArgumentNullException.ThrowIfNull(responses);
 
-        var values = new Dictionary<TelemetrySensorKey, TelemetrySensorValue>();
+        var values = new Dictionary<SensorKey, SensorValue>();
+        foreach (var value in ParseCore(requests, responses, latestOnly: true, restrictToKnownFields: true))
+        {
+            values[value.Key] = value;
+        }
+
+        return values.Values;
+    }
+
+    /// <summary>
+    /// Parses latest-value telemetry responses keyed by request statement id.
+    /// </summary>
+    public static IReadOnlyDictionary<SensorKey, SensorValue> ParseResponses(
+        IReadOnlyList<TelemetryRequest> requests,
+        IEnumerable<JsonObject> responses)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        ArgumentNullException.ThrowIfNull(responses);
+
+        var values = new Dictionary<SensorKey, SensorValue>();
+        foreach (var value in Parse(requests, responses))
+        {
+            values[value.Key] = value;
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    /// Parses telemetry responses into historical database records.
+    /// </summary>
+    public static IEnumerable<TelemetryRecord> ParseHistorical(
+        IReadOnlyList<TelemetryRequest> requests,
+        IEnumerable<JsonObject> responses)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        ArgumentNullException.ThrowIfNull(responses);
+
+        foreach (var value in ParseCore(requests, responses, latestOnly: false, restrictToKnownFields: false))
+        {
+            if (value.Timestamp is null)
+            {
+                continue;
+            }
+
+            yield return TelemetryRecordMapper.MapSensorValue(value, value.Device, value.Source);
+        }
+    }
+
+    private static IEnumerable<SensorValue> ParseCore(
+        IReadOnlyList<TelemetryRequest> requests,
+        IEnumerable<JsonObject> responses,
+        bool latestOnly,
+        bool restrictToKnownFields)
+    {
         foreach (var response in responses)
         {
             if (!TryReadInt(response["statement_id"], out var statementId) ||
@@ -51,34 +106,35 @@ public static class TelemetryResponseParser
                     continue;
                 }
 
-                if (SelectLatestRow(columns, rows) is not JsonArray row)
+                IEnumerable<JsonArray> dataRows = latestOnly
+                    ? SelectLatestRow(columns, rows) is JsonArray latestRow ? [latestRow] : []
+                    : rows.OfType<JsonArray>();
+
+                foreach (var row in dataRows)
                 {
-                    continue;
-                }
-
-                var timestamp = ExtractTimestamp(columns, row);
-                for (var index = 0; index < columns.Count && index < row.Count; index++)
-                {
-                    var column = columns[index];
-                    if (column == "time" || !EnirisConstants.TelemetryFields.ContainsKey(column))
+                    var timestamp = ExtractTimestamp(columns, row);
+                    for (var index = 0; index < columns.Count && index < row.Count; index++)
                     {
-                        continue;
-                    }
+                        var column = columns[index];
+                        if (column == "time" ||
+                            (restrictToKnownFields && !EnirisConstants.TelemetryFields.ContainsKey(column)))
+                        {
+                            continue;
+                        }
 
-                    var rawValue = row[index];
-                    if (rawValue is null)
-                    {
-                        continue;
-                    }
+                        var rawValue = row[index];
+                        if (rawValue is null)
+                        {
+                            continue;
+                        }
 
-                    var normalizedValue = NormalizeValue(column, rawValue);
-                    var key = new TelemetrySensorKey(request.Device.Id, request.Source.Key, column);
-                    values[key] = new TelemetrySensorValue(key, request.Device, request.Source, normalizedValue, timestamp);
+                        var normalizedValue = NormalizeValue(column, rawValue);
+                        var key = new SensorKey(request.Device.Id, request.Source.Key, column);
+                        yield return new SensorValue(key, request.Device, request.Source, normalizedValue, timestamp);
+                    }
                 }
             }
         }
-
-        return values;
     }
 
     private static IReadOnlyList<string> ReadColumns(JsonArray? columns) =>
@@ -120,7 +176,7 @@ public static class TelemetryResponseParser
         return latestRow ?? rows[^1] as JsonArray;
     }
 
-    private static string? ExtractTimestamp(IReadOnlyList<string> columns, JsonArray row)
+    private static DateTimeOffset? ExtractTimestamp(IReadOnlyList<string> columns, JsonArray row)
     {
         var timeIndex = columns.ToList().IndexOf("time");
         if (timeIndex < 0 || timeIndex >= row.Count)
@@ -133,17 +189,20 @@ public static class TelemetryResponseParser
         {
             if (value.TryGetValue<string>(out var stringValue))
             {
-                return stringValue;
+                if (DateTimeOffset.TryParse(stringValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+                {
+                    return parsed;
+                }
             }
 
             if (value.TryGetValue<long>(out var longValue))
             {
-                return DateTimeOffset.FromUnixTimeMilliseconds(longValue).UtcDateTime.ToString("O");
+                return DateTimeOffset.FromUnixTimeMilliseconds(longValue);
             }
 
             if (value.TryGetValue<double>(out var doubleValue))
             {
-                return DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(doubleValue, CultureInfo.InvariantCulture)).UtcDateTime.ToString("O");
+                return DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(doubleValue, CultureInfo.InvariantCulture));
             }
         }
 
@@ -270,25 +329,3 @@ public static class TelemetryResponseParser
         return node?.ToJsonString().Trim('"');
     }
 }
-
-/// <summary>
-/// Unique key for a telemetry sensor value.
-/// </summary>
-public readonly record struct TelemetrySensorKey(int DeviceId, string SourceKey, string Field)
-{
-    /// <summary>
-    /// Gets a stable unique-id suffix.
-    /// </summary>
-    public string UniqueSuffix =>
-        $"{DeviceId}_{SourceKey.Replace(':', '_').Replace(',', '_').Replace('=', '_')}_{Field}";
-}
-
-/// <summary>
-/// Latest value and metadata for one telemetry field.
-/// </summary>
-public sealed record TelemetrySensorValue(
-    TelemetrySensorKey Key,
-    EnirisDevice Device,
-    TelemetrySource Source,
-    object? Value,
-    string? Timestamp);
