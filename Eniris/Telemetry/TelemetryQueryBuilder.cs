@@ -102,7 +102,6 @@ public static class TelemetryQueryBuilder
                 @namespace["retentionPolicy"] = source.RetentionPolicy;
             }
 
-            fromClause["retentionPolicy"] = source.RetentionPolicy;
             fromClause["namespace"] = @namespace;
         }
         else
@@ -179,7 +178,9 @@ public static class TelemetryQueryBuilder
     }
 
     private static string NormalizeTimestamp(DateTime value) =>
-        value.Kind == DateTimeKind.Utc
+        value.Kind == DateTimeKind.Unspecified
+            ? throw new ArgumentException("Historical query timestamps must specify either UTC or local time.", nameof(value))
+            : value.Kind == DateTimeKind.Utc
             ? value.ToString("O", CultureInfo.InvariantCulture)
             : value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 

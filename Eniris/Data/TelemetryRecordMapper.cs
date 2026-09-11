@@ -1,4 +1,5 @@
 #nullable enable
+using System.Globalization;
 using System.Text;
 using Eniris.Configuration;
 using Eniris.Models;
@@ -23,6 +24,7 @@ public static class TelemetryRecordMapper
         ArgumentNullException.ThrowIfNull(device);
         ArgumentNullException.ThrowIfNull(source);
         var timestamp = sensorValue.Timestamp ?? throw new InvalidOperationException("A telemetry timestamp is required to map a record for persistence.");
+        var (value, valueType) = SerializeValue(sensorValue.Value);
 
         return new TelemetryRecord
         {
@@ -31,7 +33,8 @@ public static class TelemetryRecordMapper
             Measurement = source.Measurement,
             RetentionPolicy = source.RetentionPolicy,
             Field = NormalizeFieldName(sensorValue.Key.Field),
-            Value = sensorValue.Value,
+            Value = value,
+            ValueType = valueType,
             Unit = GetUnit(sensorValue.Key.Field),
             DeviceType = string.IsNullOrWhiteSpace(device.NodeType) ? null : device.NodeType,
             Timestamp = timestamp.UtcDateTime,
@@ -98,4 +101,23 @@ public static class TelemetryRecordMapper
 
         return builder.ToString().Trim('_');
     }
+
+    private static (string? Value, string ValueType) SerializeValue(object? value) =>
+        value switch
+        {
+            null => (null, "null"),
+            bool boolValue => (boolValue ? bool.TrueString : bool.FalseString, "boolean"),
+            sbyte or byte or short or ushort or int or uint or long or ulong =>
+                (Convert.ToString(value, CultureInfo.InvariantCulture), "integer"),
+            float or double or decimal =>
+                (Convert.ToString(value, CultureInfo.InvariantCulture), "number"),
+            DateTime dateTimeValue =>
+                (dateTimeValue.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture), "datetime"),
+            DateTimeOffset dateTimeOffsetValue =>
+                (dateTimeOffsetValue.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture), "datetime"),
+            string stringValue => (stringValue, "string"),
+            IFormattable formattable =>
+                (formattable.ToString(null, CultureInfo.InvariantCulture), "string"),
+            _ => (value.ToString(), "string"),
+        };
 }

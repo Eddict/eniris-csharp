@@ -42,9 +42,14 @@ public class TelemetryRecord
     public string Field { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the raw telemetry value.
+    /// Gets or sets the persisted telemetry value.
     /// </summary>
-    public object? Value { get; set; }
+    public string? Value { get; set; }
+
+    /// <summary>
+    /// Gets or sets the serialized value kind used to interpret <see cref="Value"/>.
+    /// </summary>
+    public string ValueType { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the engineering unit for the field.
