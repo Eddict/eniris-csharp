@@ -1,0 +1,3931 @@
+openapi: 3.1.0
+info:
+  title: Eniris Metadata & Telemetry Query API
+  description: '<p>This is the documentation for the metadata and telemetry query
+    API calls provided by the Eniris backend. Eniris uses these calls
+    internally, but they may also be used by third parties.</p><p>Executing any
+    calls over this API required an access token, which can be obtained via <a
+    href="https://authentication.eniris.be/docs">the Authentication API</a>.
+    Trying out any calls on this page requires to enter such an access token by
+    clicking on the "Authorize" button and entering the obtained
+    token.</p><p>Developers should note that Eniris also provides a <a
+    href="https://pypi.org/project/eniris/">Python package</a> and a NPM package
+    which implement the authentication flow and facilitate communication with
+    the API.</p><p>Our API facilitates data export to external systems. Please
+    be aware that usage of the API is subject to commercial fees. For more
+    information, please visit: <a
+    href="https://eniris.io/api_request/">https://eniris.io/api_request/</a>.</p>'
+  contact:
+    email: info@eniris.be
+  version: 1.0.0
+components:
+  securitySchemes:
+    accessBearerAuth:
+      description: In the value field below, fill in the access token. It has a 10
+        minutes validity period. A valid token can be obtained via the
+        /accesstoken endpoint (call), AFTER authorization with refreshBearerAuth
+        and the refresh token.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    def-0:
+      type: object
+      properties:
+        statusCode:
+          example: 400
+          enum:
+            - 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: Missing or misformatted query parameter or body
+      additionalProperties: false
+      title: /schemas/api/errors/400.json
+    def-1:
+      type: object
+      properties:
+        statusCode:
+          example: 401
+          enum:
+            - 401
+        error:
+          type: string
+          example: Unauthorized
+        message:
+          type: string
+          example: Failed to verify token
+      additionalProperties: false
+      title: /schemas/api/errors/401.json
+    def-2:
+      type: object
+      properties:
+        statusCode:
+          example: 403
+          enum:
+            - 403
+        error:
+          type: string
+          example: Forbidden
+        message:
+          type: string
+          example: User does not have sufficient rights
+      additionalProperties: false
+      title: /schemas/api/errors/403.json
+    def-3:
+      type: object
+      properties:
+        statusCode:
+          example: 404
+          enum:
+            - 404
+        error:
+          type: string
+          example: Not Found
+        message:
+          type: string
+          example: Resource not found
+      additionalProperties: false
+      title: /schemas/api/errors/404.json
+    def-4:
+      type: string
+      enum:
+        - aa
+        - ab
+        - af
+        - ak
+        - am
+        - ar
+        - an
+        - as
+        - av
+        - ae
+        - ay
+        - az
+        - ba
+        - bm
+        - be
+        - bn
+        - bi
+        - bo
+        - bs
+        - br
+        - bg
+        - ca
+        - cs
+        - ch
+        - ce
+        - cu
+        - cv
+        - kw
+        - co
+        - cr
+        - cy
+        - da
+        - de
+        - dv
+        - dz
+        - el
+        - en
+        - eo
+        - et
+        - eu
+        - ee
+        - fo
+        - fa
+        - fj
+        - fi
+        - fr
+        - fy
+        - ff
+        - gd
+        - ga
+        - gl
+        - gv
+        - gn
+        - gu
+        - ht
+        - ha
+        - sh
+        - he
+        - hz
+        - hi
+        - ho
+        - hr
+        - hu
+        - hy
+        - ig
+        - io
+        - ii
+        - iu
+        - ie
+        - ia
+        - id
+        - ik
+        - is
+        - it
+        - jv
+        - ja
+        - kl
+        - kn
+        - ks
+        - ka
+        - kr
+        - kk
+        - km
+        - ki
+        - rw
+        - ky
+        - kv
+        - kg
+        - ko
+        - kj
+        - ku
+        - lo
+        - la
+        - lv
+        - li
+        - ln
+        - lt
+        - lb
+        - lu
+        - lg
+        - mh
+        - ml
+        - mr
+        - mk
+        - mg
+        - mt
+        - mn
+        - mi
+        - ms
+        - my
+        - na
+        - nv
+        - nr
+        - nd
+        - ng
+        - ne
+        - nl
+        - nn
+        - nb
+        - no
+        - ny
+        - oc
+        - oj
+        - or
+        - om
+        - os
+        - pa
+        - pi
+        - pl
+        - pt
+        - ps
+        - qu
+        - rm
+        - ro
+        - rn
+        - ru
+        - sg
+        - sa
+        - si
+        - sk
+        - sl
+        - se
+        - sm
+        - sn
+        - sd
+        - so
+        - st
+        - es
+        - sq
+        - sc
+        - sr
+        - ss
+        - su
+        - sw
+        - sv
+        - ty
+        - ta
+        - tt
+        - te
+        - tg
+        - tl
+        - th
+        - ti
+        - to
+        - tn
+        - ts
+        - tk
+        - tr
+        - tw
+        - ug
+        - uk
+        - ur
+        - uz
+        - ve
+        - vi
+        - vo
+        - wa
+        - wo
+        - xh
+        - yi
+        - yo
+        - za
+        - zh
+        - zu
+      title: /schemas/api/language.json
+    def-6:
+      description: Schema for specifying deleted database nodes and relations
+      type: object
+      required:
+        - deletedNodeIds
+        - deletedRelationIds
+      properties:
+        deletedNodeIds:
+          type: array
+          item:
+            type: integer
+        deletedRelationIds:
+          type: array
+          item:
+            type: integer
+      additionalProperties: false
+      title: /schemas/api/v1/deletion-info.json
+    def-7:
+      type: object
+      properties:
+        properties:
+          type: object
+          properties: {}
+          additionalProperties: true
+      required:
+        - properties
+      title: /schemas/api/v1/device/device-input.json
+    def-8:
+      type: object
+      properties:
+        id:
+          description: Id of the device
+          type: integer
+          minimum: 0
+        lastUpdate:
+          description: Last update of the device in server time, formatted as an ISO 8601
+            string
+          type: string
+        properties:
+          type: object
+          properties: {}
+          additionalProperties: true
+        userRights:
+          description: An object specifying which device properties a user may view or edit
+          type: object
+          properties:
+            propertyEditabilities:
+              type: object
+              properties: {}
+              additionalProperties:
+                type: boolean
+            monitorManagement:
+              type: boolean
+          required:
+            - propertyEditabilities
+            - monitorManagement
+          additionalProperties: false
+      additionalProperties: false
+      required:
+        - id
+        - lastUpdate
+        - properties
+        - userRights
+      title: /schemas/api/v1/device/device.json
+    def-13:
+      anyOf:
+        - type: integer
+          minimum: 0
+        - type: array
+          items:
+            type: integer
+            minimum: 0
+        - type: string
+          enum:
+            - "*"
+      title: /schemas/api/v1/id-or-ids-or-star.json
+    def-26:
+      type: object
+      properties:
+        roleManagement:
+          description: Indicates that the parent role has the right to attach the child
+            role and its decendants to any other role.
+          type: boolean
+        userManagement:
+          description: Indicates that the parent role has the right to manage member
+            relations for the child role and its decendants.
+          type: boolean
+        viewManagement:
+          description: Indicates that the parent role has the right to manage views
+            relations for the child role and its decendants.
+          type: boolean
+        deviceManagement:
+          description: Indicates that the parent role has the right to manage monitors
+            relations for the child role and its decendants.
+          type: boolean
+        reportManagement:
+          description: Indicates that the parent role has the right to manage "views
+            report relations" for the child role and its decendants
+          type: boolean
+        alarmManagement:
+          description: Indicates that the parent role has the right to manage "alarm
+            relations" for the child role and its decendants
+          type: boolean
+      additionalProperties: false
+      required:
+        - roleManagement
+        - userManagement
+        - viewManagement
+        - deviceManagement
+        - reportManagement
+        - alarmManagement
+      title: /schemas/api/v1/role/manages/manages-input.json
+    def-27:
+      type: object
+      properties:
+        id:
+          description: Id of the manages relation
+          type: integer
+          minimum: 0
+        parentRoleId:
+          description: Id of the parent role
+          type: integer
+          minimum: 0
+        childRoleId:
+          description: Id of the child role
+          type: integer
+          minimum: 0
+        roleManagement:
+          description: Indicates that the parent role has the right to attach the child
+            role and its decendants to any other role.
+          type: boolean
+        userManagement:
+          description: Indicates that the parent role has the right to manage member
+            relations for the child role and its decendants.
+          type: boolean
+        viewManagement:
+          description: Indicates that the parent role has the right to manage views
+            relations for the child role and its decendants.
+          type: boolean
+        deviceManagement:
+          description: Indicates that the parent role has the right to manage monitors
+            relations for the child role and its decendants.
+          type: boolean
+        reportManagement:
+          description: Indicates that the parent role has the right to manage "views
+            report relations" for the child role and its decendants
+          type: boolean
+        alarmManagement:
+          description: Indicates that the parent role has the right to manage "alarm
+            relations" for the child role and its decendants
+          type: boolean
+      additionalProperties: false
+      required:
+        - id
+        - parentRoleId
+        - childRoleId
+        - roleManagement
+        - userManagement
+        - viewManagement
+        - deviceManagement
+        - reportManagement
+        - alarmManagement
+      title: /schemas/api/v1/role/manages/manages.json
+    def-28:
+      type: object
+      properties:
+        roleManagement:
+          description: Indicates that the parent role has the right to attach the child
+            role and its decendants to any other role.
+          type: boolean
+        userManagement:
+          description: Indicates that the parent role has the right to manage member
+            relations for the child role and its decendants.
+          type: boolean
+        viewManagement:
+          description: Indicates that the parent role has the right to manage views
+            relations for the child role and its decendants.
+          type: boolean
+        deviceManagement:
+          description: Indicates that the parent role has the right to manage monitors
+            relations for the child role and its decendants.
+          type: boolean
+        reportManagement:
+          description: Indicates that the parent role has the right to manage "views
+            report relations" for the child role and its decendants
+          type: boolean
+        alarmManagement:
+          description: Indicates that the parent role has the right to manage "alarm
+            relations" for the child role and its decendants
+          type: boolean
+      additionalProperties: false
+      title: /schemas/api/v1/role/manages/partial-manages-input.json
+    def-29:
+      type: object
+      properties: {}
+      additionalProperties: false
+      required: []
+      title: /schemas/api/v1/role/member/member-input.json
+    def-30:
+      type: object
+      properties:
+        id:
+          description: Id of the member relation
+          type: integer
+          minimum: 0
+        roleId:
+          description: Id of the role which has a user via the member relation
+          type: integer
+          minimum: 0
+        userEmail:
+          description: Email of the user which is a member via the member relation
+          type: string
+      additionalProperties: false
+      required:
+        - id
+        - roleId
+        - userEmail
+      title: /schemas/api/v1/role/member/member.json
+    def-31:
+      type: object
+      properties:
+        monitorManagement:
+          description: Indicates whether the role has the right to create new monitors
+            relations to the monitored device. If true, the role may read and
+            edit any device property.
+          type: boolean
+        reads:
+          description: A list of device properties which may be read by the role
+            monitoring the device
+          type: array
+          items:
+            type: string
+        edits:
+          description: A list of device properties which may be both read and edited by
+            the role monitoring the device
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+      required:
+        - monitorManagement
+        - reads
+        - edits
+      title: /schemas/api/v1/role/monitors/monitors-input.json
+    def-32:
+      type: object
+      properties:
+        id:
+          description: Id of the monitors relation
+          type: integer
+          minimum: 0
+        roleId:
+          description: Id of the role which monitors a device via the monitors relation
+          type: integer
+          minimum: 0
+        deviceId:
+          description: Id of the device which is monitored via the monitors relation
+          type: integer
+          minimum: 0
+        monitorManagement:
+          description: Indicates whether the role has the right to create new monitors
+            relations to the monitored device. If true, the role may read and
+            edit any device property.
+          type: boolean
+        reads:
+          description: A list of device properties which may be read by the role
+            monitoring the device
+          type: array
+          items:
+            type: string
+        edits:
+          description: A list of device properties which may be both read and edited by
+            the role monitoring the device
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+      required:
+        - id
+        - roleId
+        - deviceId
+        - monitorManagement
+        - reads
+        - edits
+      title: /schemas/api/v1/role/monitors/monitors.json
+    def-33:
+      type: object
+      properties:
+        name:
+          description: Role name
+          type: string
+          not:
+            enum:
+              - god
+        selfRights:
+          $ref: "#/components/schemas/def-26"
+      additionalProperties: false
+      required:
+        - name
+        - selfRights
+      title: /schemas/api/v1/role/role-input.json
+    def-34:
+      type: object
+      properties:
+        id:
+          description: Role id
+          type: integer
+          minimum: 0
+        name:
+          description: Role name
+          type: string
+        selfRights:
+          $ref: "#/components/schemas/def-26"
+        userRights:
+          $ref: "#/components/schemas/def-28"
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - selfRights
+        - userRights
+      title: /schemas/api/v1/role/role.json
+    def-40:
+      type: object
+      properties:
+        select:
+          description: An array specifying from which fields data must be collected. The
+            array must have at least one item
+          type: array
+          items:
+            oneOf:
+              - type: string
+                pattern: ^[a-zA-Z0-9_ \-\+\*/\.²³%\(\)]+$
+                description: A field for which data should be fetched
+              - type: object
+                properties:
+                  field:
+                    type: string
+                    pattern: ^[a-zA-Z0-9_ \-\+\*/\.²³%\(\)]+$
+                    description: A field for which data should be fetched
+                  function:
+                    type: string
+                    description: A function which is applied to aggregate the values of the
+                      specified field
+                    enum:
+                      - sum
+                      - min
+                      - max
+                      - mean
+                required:
+                  - field
+                  - function
+                additionalProperties: false
+          minItems: 1
+          maxItems: 100
+        from:
+          allOf:
+            - type: object
+              properties:
+                measurement:
+                  type: string
+                  pattern: ^[a-zA-Z0-9_\-]+$
+              required:
+                - measurement
+            - oneOf:
+                - type: object
+                  properties:
+                    database:
+                      type: string
+                      pattern: ^[a-zA-Z0-9_\-]+$
+                    retentionPolicy:
+                      type: string
+                      pattern: ^[a-zA-Z0-9_\-]+$
+                  required:
+                    - database
+                    - retentionPolicy
+                - type: object
+                  properties:
+                    namespace:
+                      oneOf:
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                                - "1"
+                            database:
+                              type: string
+                              pattern: ^[a-zA-Z0-9_\-]+$
+                            retentionPolicy:
+                              type: string
+                              pattern: ^[a-zA-Z0-9_\-]+$
+                          required:
+                            - version
+                            - database
+                            - retentionPolicy
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                                - "2"
+                            organization:
+                              type: string
+                              pattern: ^[a-zA-Z0-9_\-]+$
+                            bucket:
+                              type: string
+                              pattern: ^[a-zA-Z0-9_\-]+$
+                          required:
+                            - version
+                            - organization
+                            - bucket
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                                - IOx
+                            value:
+                              type: string
+                              pattern: ^[a-zA-Z0-9_\-]+$
+                          required:
+                            - version
+                            - value
+                          additionalProperties: false
+                  required:
+                    - namespace
+        where:
+          description: A set of conditions which must be valid for the fetched data
+          type: object
+          properties:
+            time:
+              description: A list with either one or two time conditions which must be valid
+                for the fetched data
+              type: array
+              items:
+                description: A time condition which must be valid for all timestamps which are
+                  returned from the query. For these comparisons, the timestamp
+                  of the datapoint is the left hand side of the operator, and
+                  the provided time value is the right hand side.
+                type: object
+                properties:
+                  operator:
+                    type: string
+                    enum:
+                      - <
+                      - <=
+                      - ">"
+                      - ">="
+                      - =
+                  value:
+                    description: A timestamp, either a string in ISO8601 format, or a number
+                      representing a Unix time in milliseconds.
+                    anyOf:
+                      - type: number
+                      - type: string
+                        format: date-time
+              maxItems: 2
+            tags:
+              description: An object with string properties and values, specifying a tagset
+                which must match the tagset of the returned data. At least one
+                tag must be specified
+              type: object
+              additionalProperties:
+                type: string
+                pattern: ^[\u0020-\u007E\u00A0-\u00FF]+$
+              minProperties: 1
+          additionalProperties: false
+        orderBy:
+          description: The order in which datapoints should be returned
+          type: string
+          enum:
+            - ASC
+            - DESC
+        limit:
+          description: The maxumum number of datapoints which should be returned. This
+            should be an integer.
+          type: integer
+          minimum: 1
+      required:
+        - select
+        - from
+      additionalProperties: false
+      title: /schemas/api/v1/telemetry/query-body.json
+    def-41:
+      oneOf:
+        - type: object
+          description: If an error occured, the error property will be defined and contain
+            an appropriate error message
+          properties:
+            statement_id:
+              description: The index corresponding to matching request body item
+              type: integer
+            error:
+              type: string
+              description: "A string specifying an error. Typical errors are: 'Unauthorized',
+                'Invalid format: ....' or some more query-specific error
+                message"
+          required:
+            - statement_id
+            - error
+          additionalProperties: false
+        - type: object
+          description: If the query did return some data, the series property will be
+            defined
+          properties:
+            statement_id:
+              description: The index corresponding to matching request body item
+              type: integer
+            series:
+              description: The data matching the specified query
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  tags:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  columns:
+                    type: array
+                    items:
+                      type: string
+                  values:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        oneOf:
+                          - type: string
+                          - type: number
+                          - type: "null"
+                          - type: boolean
+              minItems: 1
+          required:
+            - statement_id
+            - series
+          additionalProperties: false
+        - type: object
+          description: If there is no data matching the specified query, but the query is
+            still valid, the series property is undefined
+          properties:
+            statement_id:
+              description: The index corresponding to matching request body item
+              type: integer
+          required:
+            - statement_id
+          additionalProperties: false
+      title: /schemas/api/v1/telemetry/query-response.json
+    def-42:
+      type: string
+      enum:
+        - "2"
+        - "3"
+        - "4"
+      title: /schemas/api/v1/view/insights-version.json
+paths:
+  /v1/auth/forgot-password:
+    post:
+      operationId: postForgotPassword
+      summary: Send a password reset email
+      tags:
+        - User
+      description: Send a password reset email to an existing user. Wait at least 60
+        seconds between successive calls
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: The email address to send the password reset link to
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  minLength: 5
+                  maxLength: 100
+              required:
+                - email
+              additionalProperties: false
+        description: The email address to send the password reset link to
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: origin
+          required: false
+          description: The mail configuration which should be used to send the email
+        - schema:
+            type: string
+          in: query
+          name: language
+          required: false
+          description: The language which should be used for sending the email
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "204":
+          description: >-
+            Request processed succesfully:
+                        <ul>
+                          <li>
+                            if the user is known, a password reset email is sent
+                          </li>
+                          <li>
+                            if the user is not known, the request is ignored and no mail is sent
+                          </li>
+                        </ul>
+          content:
+            application/json:
+              schema:
+                description: >-
+                  Request processed succesfully:
+                              <ul>
+                                <li>
+                                  if the user is known, a password reset email is sent
+                                </li>
+                                <li>
+                                  if the user is not known, the request is ignored and no mail is sent
+                                </li>
+                              </ul>
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "403":
+          description: The user tried to register with an email from a known throwaway
+            email provider
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    constant: 403
+                    example: 403
+                  error:
+                    type: string
+                    example: Forbidden
+                  message:
+                    type: string
+                    example: Forbidden email provider
+                additionalProperties: false
+        "429":
+          description: Last password forgot call was too recent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    constant: 429
+                    example: 429
+                  error:
+                    type: string
+                    example: Too many requests
+                  message:
+                    type: string
+                    example: Last password forgot call was too recent
+                additionalProperties: false
+  /v1/device:
+    get:
+      operationId: getDevice
+      summary: Collect devices (replaced by POST /v1/device/query)
+      tags:
+        - Device
+      description: Get all (or some of) the devices which are monitored by roles of
+        which the user is a member. Using the query parameters, it is possible
+        to apply filters both on devices which are returned, and on the
+        properties of those devices. The POST /v1/device/query is a preferable
+        alternative, which can better handle complex filters
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: skipHash
+          required: false
+          description: Before sending a reply, a base64 encoded sha256 digest is
+            calculated by sorting the devices by id and updating the hash with
+            the lastUpdate properties of each of the devices. When the digest
+            matches this property, code 204 with an empty response is returned.
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: fields
+          required: false
+          description: Only return the specified device fields. If no fields are
+            specified, all device fields are returned.
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: id
+          required: false
+          description: Only return devices with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: nodeId
+          required: false
+          description: Only return devices with one of the specified node ids
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: nodeType
+          required: false
+          description: Only return devices with one of the specified node types
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: viewId
+          required: false
+          description: Only return those devices which are monitored by roles with access
+            to a specific view
+        - schema:
+            deprecated: true
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: roleId
+          required: false
+          description: Only return devices which are directly or indirectly monitored by
+            one of the specified role ids. Prefer the companyId query parameter
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: companyId
+          required: false
+          description: Only return devices which are directly or indirectly monitored by
+            one of the specified company ids
+        - schema:
+            type: boolean
+          in: query
+          name: isActive
+          required: false
+          description: Only return devices which are active or inactive
+      deprecated: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 4
+      responses:
+        "200":
+          description: An array with the filtered devices. For each device, the readable
+            and editable properties of the device are returned, as well as
+            information regarding the editabilities of those properties and
+            whether the user has monitorManagement rights for the device. If the
+            fields query parameter was specified, only those device properties
+            which were listed are returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-8"
+        "204":
+          description: This is returned when skipHash is provided and the provided hash
+            matches the current hash calculated using the lastUpdate properties
+            of the selected devices
+          content:
+            application/json:
+              schema:
+                description: This is returned when skipHash is provided and the provided hash
+                  matches the current hash calculated using the lastUpdate
+                  properties of the selected devices
+        "400":
+          description: Invalidly formatted query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+    post:
+      operationId: postDevice
+      summary: Create a new device and the monitors relation which connects this
+        device to a role
+      tags:
+        - Device
+      description: >-
+        A user can only execute this call is he is a member of an authorizing
+        role which satisfies one of the following conditions:
+              <ul>
+                <li>
+                  The authorizing role has *direct or indirect* deviceManagement rights for the role for which a device is created
+                </li>
+                <li>
+                  The authorizing role has *indirect* roleManagement rights for the role for which a device is created
+                </li>
+              </ul>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-7"
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: query
+          name: roleId
+          required: true
+          description: Id of the role to which the device (and monitors relation) should
+            be added
+        - schema:
+            type: boolean
+          in: query
+          name: validate
+          required: false
+          description: Before creating a new device, validate the properties using the
+            schema corresponding to its nodeType (if such a schema exists)
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 1
+      responses:
+        "200":
+          description: The newly created device and monitors relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monitors:
+                    $ref: "#/components/schemas/def-32"
+                  device:
+                    $ref: "#/components/schemas/def-8"
+                required:
+                  - monitors
+                  - device
+                additionalProperties: false
+        "400":
+          description: Invalidly formatted body or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate device management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/device/query:
+    post:
+      operationId: postDeviceQuery
+      summary: Collect devices
+      tags:
+        - Device
+      description: Get all (or some of) the devices which are monitored by roles of
+        which the user is a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Filters on which devices should be returned, the returned device
+                properties and a skipHash field to avoid unnecessary data
+                transfer.
+              type: object
+              properties:
+                skipHash:
+                  description: Before sending a reply, a base64 encoded sha256 digest is
+                    calculated by sorting the devices by id and updating the
+                    hash with the lastUpdate properties of each of the devices.
+                    When the digest matches this property, code 204 with an
+                    empty response is returned.
+                  type: string
+                fields:
+                  description: Only return the specified device fields. If no fields are
+                    specified, all device fields are returned.
+                  type: array
+                  items:
+                    type: string
+                filter:
+                  description: Indexed filters for which matching devices are returned
+                  type: object
+                  properties:
+                    id:
+                      description: Only return devices with one of the specified ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    nodeId:
+                      description: Only return devices with one of the specified node ids
+                      type: array
+                      items:
+                        type: string
+                    nodeType:
+                      description: Only return devices with one of the specified node types
+                      type: array
+                      items:
+                        type: string
+                    viewId:
+                      description: Only return those devices which are monitored by roles with access
+                        to a specific view
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    roleId:
+                      deprecated: true
+                      description: Only return devices which are directly or indirectly monitored by
+                        one of the specified role ids. Prefer the companyId
+                        filter
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    companyId:
+                      description: Only return devices which are directly or indirectly monitored by
+                        one of the specified company ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    isActive:
+                      description: Only return devices which are active or inactive
+                      type: boolean
+                  additionalProperties: false
+                conditions:
+                  description: Non-indexed filters on which matching devices are returned. The
+                    conditions can only be applied to properties which the user
+                    can see. These filters are applied on the application layer
+                    and are rather expensive.
+                  type: object
+                  properties: {}
+                  additionalProperties:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: boolean
+                        - type: number
+                        - type: string
+                        - type: "null"
+              additionalProperties: false
+        description: Filters on which devices should be returned, the returned device
+          properties and a skipHash field to avoid unnecessary data transfer.
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: An array with the filtered devices. For each device, the readable
+            and editable properties of the device are returned, as well as
+            information regarding the editabilities of those properties and
+            whether the user has monitorManagement rights for the device. If the
+            fields property was specified, only those device properties which
+            were listed are returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-8"
+        "204":
+          description: This is returned when skipHash is provided and the provided hash
+            matches the current hash calculated using the lastUpdate properties
+            of the selected devices
+          content:
+            application/json:
+              schema:
+                description: This is returned when skipHash is provided and the provided hash
+                  matches the current hash calculated using the lastUpdate
+                  properties of the selected devices
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+  /v1/device/{deviceId}:
+    put:
+      operationId: putDeviceById
+      summary: Update an existing device
+      tags:
+        - Device
+      description: A user can only execute this call is he is a member of an
+        authorizing role such that this role has a monitors relation with
+        monitorManagement rights. Alternatively, the user must be member of a
+        set of roles with monitors relations for the specified device, such that
+        the set of device properties which these relations allow to edit are a
+        subset of the device properties which are specified in the current
+        request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-7"
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - strict
+              - legacy
+              - merge
+            default: legacy
+          in: query
+          name: mode
+          required: false
+          description: >-
+            Which strategy should be applied to merge the updated device
+            properties with the properties which are already present.
+                        <ul>
+                          <li> In strict mode, the device is completely overwritten by the updated device properties. Properties which are not included in the update are removed. This required that the user has monitorManagement rights for the device. </li>
+                          <li>In legacy mode, the device properties which are included in the update are overwitten, but those properties which are not included in the update are left unchanged. </li>
+                          <li>
+                            In merge mode:
+                            <ol>
+                              <li>those properties which are not mentioned in the update are left untouched</li>
+                              <li>those properties whose values are not key-value objects in both the update AND in the original object are overwritten</li>
+                              <li>those properties whose values are key-value objects both in the update and the original are merged by recursively applying this strategy to the values of the original and the update</li>
+                            </ol>
+                            <strong>Tip:</strong> merge mode is recursive for key-value objects, but it is not recursive for arrays. If you need to update a single item inside an array, use the PATCH endpoint instead.
+                          </li>
+                        </ul>
+        - schema:
+            type: boolean
+          in: query
+          name: validate
+          required: false
+          description: Before executing the update, validate the updated device using the
+            schema corresponding to its nodeType (if such a schema exists)
+        - schema:
+            anyOf:
+              - type: integer
+                minimum: 0
+              - type: array
+                items:
+                  type: integer
+                  minimum: 0
+          in: path
+          name: deviceId
+          required: true
+          description: Id of the device or devices which we want to edit
+        - schema:
+            type: string
+          in: header
+          name: If-Unmodified-Since
+          required: false
+          description: An ISO 8601 time or a time of the format '&lt;day-name&gt;,
+            &lt;day&gt; &lt;month&gt; &lt;year&gt;
+            &lt;hour&gt;:&lt;minute&gt;:&lt;second&gt; GMT', specifying the
+            latest timestamp any of the affected devices might have received an
+            update in order for the request to be executed. A code 412 error
+            will be returned if at least one device was updated after the
+            specified time
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 2
+      responses:
+        "200":
+          description: The readable and editable properties of the device, as well as
+            information regarding the editabilities of those properties and
+            whether the user has monitorManagement rights for the device
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    description: The updated device
+                    oneOf:
+                      - $ref: "#/components/schemas/def-8"
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/def-8"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "412":
+          description: At least one of the affected devices was updated after the
+            specified time
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    example: 412
+                    enum:
+                      - 412
+                  error:
+                    type: string
+                    example: Precondition Failed
+                  message:
+                    type: string
+                    example: At least one device was modified after the specified time
+                additionalProperties: false
+    patch:
+      operationId: patchDeviceById
+      summary: Perform a series of targeted update operations
+      tags:
+        - Device
+      description: Patch the properties of one or more devices by specifying JSON
+        patch operations which should be applied to the device properties in
+        accordance with RFC 6902. A user can only execute this call when is he
+        is a member of an authorizing role such that this role has a monitors
+        relation with monitorManagement rights. Alternatively, the user must be
+        member of a set of roles with monitors relations for the specified
+        device, such that the set of device properties which these relations
+        allow to edit are a subset of the device properties which are specified
+        in the current request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: The JSON patch operations
+              type: array
+              items:
+                oneOf:
+                  - type: object
+                    properties:
+                      op:
+                        type: string
+                        enum:
+                          - add
+                          - replace
+                          - test
+                      path:
+                        type: string
+                      value: {}
+                    required:
+                      - op
+                      - path
+                      - value
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      op:
+                        type: string
+                        enum:
+                          - remove
+                      path:
+                        type: string
+                    required:
+                      - op
+                      - path
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      op:
+                        type: string
+                        enum:
+                          - copy
+                          - move
+                      path:
+                        type: string
+                      from:
+                        type: string
+                    required:
+                      - op
+                      - path
+                      - from
+                    additionalProperties: false
+        description: The JSON patch operations
+      parameters:
+        - schema:
+            type: boolean
+          in: query
+          name: validate
+          required: false
+          description: Before executing the update, validate the updated device using the
+            schema corresponding to its nodeType (if such a schema exists)
+        - schema:
+            anyOf:
+              - type: integer
+                minimum: 0
+              - type: array
+                items:
+                  type: integer
+                  minimum: 0
+          in: path
+          name: deviceId
+          required: true
+          description: Id of the device or devices which we want to edit
+        - schema:
+            type: string
+          in: header
+          name: If-Unmodified-Since
+          required: false
+          description: An ISO 8601 time or a time of the format '&lt;day-name&gt;,
+            &lt;day&gt; &lt;month&gt; &lt;year&gt;
+            &lt;hour&gt;:&lt;minute&gt;:&lt;second&gt; GMT', specifying the
+            latest timestamp any of the affected devices might have received an
+            update in order for the request to be executed. A code 412 error
+            will be returned if at least one device was updated after the
+            specified time
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 3
+      responses:
+        "200":
+          description: The readable and editable properties of the device, as well as
+            information regarding the editabilities of those properties and
+            whether the user has monitorManagement rights for the device
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    description: The updated device
+                    oneOf:
+                      - $ref: "#/components/schemas/def-8"
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/def-8"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "412":
+          description: At least one of the affected devices was updated after the
+            specified time
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    example: 412
+                    enum:
+                      - 412
+                  error:
+                    type: string
+                    example: Precondition Failed
+                  message:
+                    type: string
+                    example: At least one device was modified after the specified time
+                additionalProperties: false
+        "422":
+          description: One of the specified operations could not be successfully executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    example: 422
+                    enum:
+                      - 422
+                  error:
+                    type: string
+                    example: Unprocessable Entity
+                  message:
+                    type: string
+                    example: Operation 0 (add) failed for device 2 at path "/info/currency"
+                additionalProperties: false
+  /v1/telemetry/query:
+    post:
+      operationId: postTelemetryQuery
+      summary: Collect telemetry data
+      tags:
+        - Telemetry
+      description: >-
+        Execute up to 1000 telemetry queries. A leaky bucket rate limiting
+        mechanism is applied based on the calculated cost of each request. The
+        cost is a linear combination of the number of requests, the number of
+        queries per request, the estimated number of returned datapoints and the
+        number of scanned shards.
+
+
+        To minimize cost:
+
+        - **Requests**: Send multiple queries in a single request (up to 1000).
+        Make sure the total cost does not exceed your tier's bucket capacity.
+
+        - **Queries per request**: Use a single query to select multiple fields
+        instead of one query per field.
+
+        - **Returned datapoints**: The estimate is based on the selected time
+        range, the expected datapoint frequency and the provided `limit`. When
+        no range is provided, a worst-case range is assumed. Always specify a
+        time range and set `limit` as low as possible.
+
+        - **Scanned shards**: Depends on the time range and expected datapoint
+        frequency, but is unaffected by `limit`. A tight time range minimizes
+        this component as well.
+
+
+        If a request's cost would overflow the bucket, a `429` response is
+        returned with a `Retry-After` header indicating how long to wait. If the
+        cost exceeds the bucket's total capacity entirely, a `422` is returned.
+        Ignoring `Retry-After` headers will result in a temporary 5-minute IP
+        ban.
+
+
+        Helper scripts for estimating request cost are available at
+        [/assets/estimateCost.ts](/assets/estimateCost.ts) (TypeScript) and
+        [/assets/estimateCost.py](/assets/estimateCost.py) (Python).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - description: A list with up to 1000 telemetry queries.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/def-40"
+                  maxItems: 1000
+                - $ref: "#/components/schemas/def-40"
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: apiTier
+          required: false
+          description: >-
+            Rate limit this request according to the specified tier, tracked
+            completely separately from your current tier. Useful for testing how
+            much capacity a given tier provides before committing to a contract.
+            If not specified, the highest available tier for the user is used.
+
+
+            Available tiers:
+
+            - `free` (0 EUR/month): 100 tokens/minute, bucket capacity 100
+            tokens
+
+            - `basic` (250 EUR/month): 6000 tokens/minute, bucket capacity 6000
+            tokens
+
+            - `premium` (1500 EUR/month): 60000 tokens/minute, bucket capacity
+            60000 tokens
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: An array with for every query either an error message, the
+            requested data or no data
+          headers:
+            X-RateLimit-Cost:
+              schema:
+                schema:
+                  type: number
+                  example: 350
+              description: The calculated operational cost of the rejected request.
+            X-RateLimit-Remaining:
+              schema:
+                schema:
+                  type: number
+                  example: 4850
+              description: The available space left in your leaky bucket after processing this
+                request. This capacity continuously replenishes (drains) over
+                time. This header is omitted if your tier has unlimited
+                capacity.
+            X-RateLimit-Used:
+              schema:
+                schema:
+                  type: number
+                  example: 150
+              description: The current fill level of your leaky bucket after processing this
+                request. This value represents recently accumulated request
+                costs and constantly leaks (decreases) based on your tier's leak
+                rate. This header is omitted if your tier has unlimited
+                capacity.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - description: An array of results, with the same number of items as the request
+                      body, where each item corresponds to the request body item
+                      with a matching index
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-41"
+                    maxItems: 1000
+                  - $ref: "#/components/schemas/def-41"
+        "400":
+          description: Invalidly formatted body parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: You are trying to use an API tier that you are not allowed to use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+        "422":
+          description: Unprocessable Content. The request is syntactically valid, but its
+            calculated operational cost exceeds the absolute maximum capacity of
+            your subscription tier. This request will never succeed, even with
+            an empty bucket.
+          headers:
+            X-RateLimit-Cost:
+              schema:
+                schema:
+                  type: number
+                  example: 7450
+              description: The calculated operational cost of the rejected request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    description: The HTTP status code.
+                    type: number
+                    example: 422
+                    enum:
+                      - 422
+                  error:
+                    type: string
+                    example: Unprocessable Content
+                    description: Standard HTTP error classification.
+                  message:
+                    type: string
+                    example: The calculated cost exceeds your tier's maximum capacity. This request
+                      will never succeed.
+                    description: A human-readable explanation indicating that the requested data
+                      volume or complexity fundamentally violates the user's
+                      tier constraints.
+                  cost:
+                    description: The calculated operational cost of the rejected request.
+                    type: number
+                    example: 7450
+                  maximumCapacity:
+                    description: The absolute maximum bucket capacity permitted by your current
+                      tier. You must reduce your request cost to be less than or
+                      equal to this value.
+                    type: number
+                    example: 5000
+                additionalProperties: false
+        "429":
+          description: Rate limit exceeded or IP temporarily banned. The client's leaky
+            bucket does not have enough currently available capacity to cover
+            the cost of the requested operation.
+          headers:
+            X-RateLimit-Cost:
+              schema:
+                schema:
+                  type: number
+                  example: 350
+              description: The calculated operational cost of the rejected request. This
+                header is omitted if the request was rejected due to a temporary
+                IP ban.
+            X-RateLimit-Remaining:
+              schema:
+                schema:
+                  type: number
+                  example: 150
+              description: The available space left in your bucket. Because this is a 429
+                error, this value is strictly less than the required cost. This
+                header is omitted if the request was rejected due to a temporary
+                IP ban.
+            X-RateLimit-Used:
+              schema:
+                schema:
+                  type: number
+                  example: 4850
+              description: The current fill level of your bucket, representing recently
+                accumulated request costs. This header is omitted if the request
+                was rejected due to a temporary IP ban.
+            Retry-After:
+              schema:
+                schema:
+                  type: number
+                  example: 15
+              description: The minimum number of seconds the client must wait before the
+                bucket has drained enough to accommodate this specific request.
+                This header is always present.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - description: "Standard Rate Limit: Bucket is full."
+                    type: object
+                    properties:
+                      statusCode:
+                        type: number
+                        example: 429
+                        enum:
+                          - 429
+                      error:
+                        type: string
+                        example: Too Many Requests
+                      message:
+                        type: string
+                        example: Your request was rejected because your leaky bucket is too full. The
+                          cost to fulfill this request exceeds your currently
+                          available capacity. Please wait a moment for the
+                          bucket to drain (replenish capacity) before retrying.
+                      cost:
+                        type: number
+                        example: 350
+                      remainingCapacity:
+                        type: number
+                        example: 150
+                      usedCapacity:
+                        type: number
+                        example: 4850
+                      retryAfter:
+                        type: number
+                        example: 15
+                    required:
+                      - statusCode
+                      - error
+                      - message
+                      - cost
+                      - remainingCapacity
+                      - usedCapacity
+                      - retryAfter
+                    additionalProperties: false
+                  - description: "Abuse Penalty: IP is temporarily banned."
+                    type: object
+                    properties:
+                      statusCode:
+                        type: number
+                        example: 429
+                        enum:
+                          - 429
+                      error:
+                        type: string
+                        example: Too Many Requests
+                      message:
+                        type: string
+                        example: "Temporary IP Ban: Your IP was banned for 300 seconds because the
+                          Retry-After header was ignored 10 times within 60
+                          seconds."
+                      retryAfter:
+                        type: number
+                        example: 300
+                    required:
+                      - statusCode
+                      - error
+                      - message
+                      - retryAfter
+                    additionalProperties: false
+  /v1/role:
+    get:
+      operationId: getRole
+      summary: Collect roles (replaced by POST /v1/role/query)
+      tags:
+        - Role
+      description: Get all (or some of) the roles of which a user is a member (either
+        directly or indirectly). The POST /v1/role/query is a preferable
+        alternative, which can better handle complex filters.
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: query
+          name: viewId
+          required: false
+          description: Only return those roles which have access to a specific view
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: id
+          required: false
+          description: Only return roles with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: name
+          required: false
+          description: Only return roles with a name in this array
+        - schema:
+            deprecated: true
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: ancestorRoleId
+          required: false
+          description: Only return roles which are managed (directly or indirectly) by one
+            of the specified ancestor role ids. Prefer the companyId query
+            parameter
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: companyId
+          required: false
+          description: Only return roles which are directly or indirectly manages by one
+            of the specified company ids
+        - schema:
+            type: boolean
+          in: query
+          name: userRights.roleManagement
+          required: false
+          description: For each of the returned roles, set the roleManagement property to
+            indicate whether the user has direct or indirect roleManagement
+            rights
+        - schema:
+            type: boolean
+          in: query
+          name: userRights.userManagement
+          required: false
+          description: For each of the returned roles, set the userManagement property to
+            indicate whether the user has direct or indirect userManagement
+            rights
+        - schema:
+            type: boolean
+          in: query
+          name: userRights.viewManagement
+          required: false
+          description: For each of the returned roles, set the viewManagement property to
+            indicate whether the user has direct or indirect viewManagement
+            rights
+        - schema:
+            type: boolean
+          in: query
+          name: userRights.deviceManagement
+          required: false
+          description: For each of the returned roles, set the deviceManagement property
+            to indicate whether the user has direct or indirect deviceManagement
+            rights
+        - schema:
+            type: boolean
+          in: query
+          name: userRights.reportManagement
+          required: false
+          description: For each of the returned roles, set the reportManagement property
+            to indicate whether the user has direct or indirect reportManagement
+            rights
+        - schema:
+            type: boolean
+          in: query
+          name: userRights.alarmManagement
+          required: false
+          description: For each of the returned roles, set the alarmManagement property to
+            indicate whether the user has direct or indirect alarmManagement
+            rights
+      deprecated: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 5
+      responses:
+        "200":
+          description: The roles of which the user is a member and which match all
+            specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-34"
+        "400":
+          description: Invalidly formatted query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+    post:
+      operationId: postRole
+      summary: Create a new role and the manages relation which connects this role to
+        its parent
+      tags:
+        - Role
+      description: A user can only execute this action if he is a member of an
+        autorizing role which has (direct or indirect) roleManagement rights for
+        the parent role of the newly created child role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: The manages relation and role to be created.
+              type: object
+              properties:
+                manages:
+                  $ref: "#/components/schemas/def-26"
+                role:
+                  $ref: "#/components/schemas/def-33"
+              additionalProperties: false
+              required:
+                - manages
+                - role
+        description: The manages relation and role to be created.
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: query
+          name: parentRoleId
+          required: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 1
+      responses:
+        "200":
+          description: The roles of which the user is a member and which match all
+            specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manages:
+                    $ref: "#/components/schemas/def-27"
+                  role:
+                    $ref: "#/components/schemas/def-34"
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/role/query:
+    post:
+      operationId: postRoleQuery
+      summary: Collect roles (alternative of GET /v1/role)
+      tags:
+        - Role
+      description: Get all (or some of) the roles of which a user is a member (either
+        directly or indirectly)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  description: Only return those roles which match each of the specified filters
+                  type: object
+                  properties:
+                    viewId:
+                      description: Only return those roles which have access to a specific view
+                      type: integer
+                      minimum: 0
+                    id:
+                      description: Only return roles with one of the specified ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    name:
+                      description: Only return roles with a name in this array
+                      type: array
+                      items:
+                        type: string
+                    ancestorRoleId:
+                      deprecated: true
+                      description: Only return roles which are managed (directly or indirectly) by one
+                        of the specified ancestor role ids. Prefer the companyId
+                        filter
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    companyId:
+                      description: Only return roles which are directly or indirectly managed by one
+                        of the specified company ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                  additionalProperties: false
+                userRights:
+                  $ref: "#/components/schemas/def-28"
+              additionalProperties: false
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: The roles of which the user is a member and which match all
+            specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-34"
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+  /v1/role/{roleId}:
+    put:
+      operationId: putRoleById
+      summary: Update an existing role
+      tags:
+        - Role
+      description: A user can only execute this action if he is a member of an
+        autorizing role which has *indirect* roleManagement rights for the
+        updated role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-33"
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role which we want to update
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 2
+      responses:
+        "200":
+          description: The updated role
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    $ref: "#/components/schemas/def-34"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/role/{parentRoleId}/manages:
+    get:
+      operationId: getManages
+      summary: Collect manages relations (replaced by POST
+        /v1/role/{parentRoleId}/manages/query)
+      tags:
+        - Manages
+      description: Get all (or some of) the manages relations which start from a role
+        of which a user is a member (either directly or indirectly). The POST
+        /v1/role/{parentRoleId}/manages/query is a preferable alternative which
+        can better handle complex filters.
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: id
+          required: false
+          description: Only return manages relations with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: childRoleId
+          required: false
+          description: Only return manages relations with one of the specified child role
+            ids
+        - schema:
+            $ref: "#/components/schemas/def-13"
+          in: path
+          name: parentRoleId
+          required: true
+      deprecated: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 4
+      responses:
+        "200":
+          description: The manages relations which start from roles of which the user is a
+            member and which match all the specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-27"
+        "400":
+          description: Invalidly formatted query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+    put:
+      operationId: putManages
+      summary: Create or update a manages relation
+      tags:
+        - Manages
+      description: >-
+        Create a manages relation (or update the existing one) between two
+        roles<br><br>
+                When a valid childRolePassword query parameter is specified, the call can be executed when the user is a member of an autorizing role which has direct or indirect roleManagement rights for the parent role of the newly created (or updated) manages relation.<br><br>
+                When no childRolePassword query parameter is provided, a user can only execute this action if he is a member of an autorizing role which has:
+                <ul>
+                  <li>
+                    direct or indirect roleManagement rights for the parent role of the newly created (or updated) manages relation
+                  </li>
+                  <li>
+                    *indirect* roleManagement rights for the child role of the newly created (or updated) manages relation
+                  </li>
+                </ul>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-26"
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: query
+          name: childRoleId
+          required: true
+          description: Id of the parent role of the newly created (or updated) manages
+            relation
+        - schema:
+            type: string
+          in: query
+          name: childRolePassword
+          required: false
+          description: Password for the child role of the newly created (or updated)
+            manages relation
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: parentRoleId
+          required: true
+          description: Id of the parent role of the newly created (or updated) manages
+            relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 1
+      responses:
+        "200":
+          description: The newly created (or updated) manages relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manages:
+                    $ref: "#/components/schemas/def-27"
+        "400":
+          description: Invalidly formatted body or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+        "409":
+          description: The proposed manages relation cannot be added since it would create
+            a cycle in the role graph
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    constant: 409
+                    example: 409
+                  error:
+                    type: string
+                    example: Conflict
+                  message:
+                    type: string
+                    example: The proposed manages relation cannot be added since it would create a
+                      cycle in the role graph
+                additionalProperties: false
+        "429":
+          description: The provided childRolePassword query parameter cannot be checked,
+            since too many successive failed role query calls occured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    constant: 429
+                    example: 429
+                  error:
+                    type: string
+                    example: Too Many Requests
+                  message:
+                    type: string
+                    example: The provided childRolePassword query parameter cannot be checked, since
+                      too many successive failed role query calls occured
+                additionalProperties: false
+  /v1/role/{parentRoleId}/manages/query:
+    post:
+      operationId: postManagesQuery
+      summary: Collect manages relations
+      tags:
+        - Manages
+      description: Get all (or some of) the manages relations which start from a role
+        of which a user is a member (either directly or indirectly).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  description: Only return those manages relations which match each of the
+                    specified filters
+                  type: object
+                  properties:
+                    id:
+                      description: Only return manages relations with one of the specified ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    parentRoleId:
+                      description: Only return manages relations with one of the specified parent role
+                        ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    childRoleId:
+                      description: Only return manages relations with one of the specified child role
+                        ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                  additionalProperties: false
+              additionalProperties: false
+      parameters:
+        - schema:
+            $ref: "#/components/schemas/def-13"
+          in: path
+          name: parentRoleId
+          required: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: The manages relations which start from roles of which the user is a
+            member and which match all the specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-27"
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+  /v1/role/{parentRoleId}/manages/{managesId}:
+    put:
+      operationId: putManagesById
+      summary: Update an existing manages relation
+      tags:
+        - Manages
+      description: Update an existing manages relation. A user can only execute this
+        action if he is a member of an autorizing role which has (direct or
+        indirect) roleManagement rights for the parent role of the manages
+        relation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-26"
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: parentRoleId
+          required: true
+          description: Id of the parent role of the manages relation
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: managesId
+          required: true
+          description: Id of the updated manages relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 2
+      responses:
+        "200":
+          description: The updated manages relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manages:
+                    $ref: "#/components/schemas/def-27"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+    delete:
+      operationId: deleteManagesById
+      summary: Delete a manages relation
+      tags:
+        - Manages
+      description: Delete a specified manages relation. If the child role of the
+        manages relation was only connected to the rest of the role graph by the
+        deleted relation, this child role will be deleted as well. In that case,
+        a cascade of deletions of nodes and relations in the graph may occur. A
+        user can only execute this action if he is a member of an autorizing
+        role which has (direct or indirect) roleManagement rights for the parent
+        role of the manages relation
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: parentRoleId
+          required: true
+          description: Id of the parent role of the manages relation
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: managesId
+          required: true
+          description: Id of the manages relation which must be deleted
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 3
+      responses:
+        "200":
+          description: The ids of the deleted nodes and relations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-6"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/role/{roleId}/monitors:
+    get:
+      operationId: getMonitors
+      summary: Collect monitors relations (replaced by POST
+        /v1/role/{roleId}/monitors/query)
+      tags:
+        - Monitors
+      description: Get the monitors relations which start from roles of which the user
+        is a member and which are in the specified list of role ids. The POST
+        /v1/role/{roleId}/monitors/query is a preferable alternative which can
+        better handle complex filters.
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: id
+          required: false
+          description: Only return monitors relations with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: deviceId
+          required: false
+          description: Only return monitors relations with one of the specified device ids
+        - schema:
+            $ref: "#/components/schemas/def-13"
+          in: path
+          name: roleId
+          required: true
+      deprecated: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 4
+      responses:
+        "200":
+          description: The monitors relations which start from roles of which the user is
+            a member and which match all the specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monitors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-32"
+        "400":
+          description: Invalidly formatted query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+    put:
+      operationId: putMonitors
+      summary: Create or update a monitors relation
+      tags:
+        - Monitors
+      description: >-
+        Create a monitors relation (or update the existing one) between a role
+        and a device.<br><br>
+                To execute this query, the user must be a member of an authorizing role which satisfies both of the following conditions:
+                <ol>
+                  <li>
+                    One of the following role-related conditions is true:
+                    <ul>
+                      <li>
+                        The authorizing role has *direct or indirect* deviceManagement rights for the role from which the monitors relation is created (or updated)
+                      </li>
+                      <li>
+                        The authorizing role has *indirect* roleManagement rights for the role from which the monitors relation is created (or updated)
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    The authorizing role has monitorManagement rights for the device to which the monitors relation is created
+                  </li>
+                </ol>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-31"
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: deviceId
+          required: true
+          description: Id of the device the newly created (or updated) monitors relation
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role of the newly created (or updated) monitors relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 1
+      responses:
+        "200":
+          description: The newly created (or updated) monitors relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monitors:
+                    description: The newly created (or updated) monitors relation
+                    oneOf:
+                      - $ref: "#/components/schemas/def-32"
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/def-32"
+        "400":
+          description: Invalidly formatted body or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+        "409":
+          description: The monitors relation cannot be updated, since it is the only
+            monitors relation of the device which allows monitorManagement
+            rights, and the proposed change would revoke these rights, resulting
+            in a device with uneditable monitors relations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    constant: 409
+                    example: 409
+                  error:
+                    type: string
+                    example: Conflict
+                  message:
+                    type: string
+                    example: The monitors relation cannot be updated, since it is the only monitors
+                      relation of the device which allows monitorManagement
+                      rights, and the proposed change would revoke these rights,
+                      resulting in a device with uneditable monitors relations.
+                additionalProperties: false
+  /v1/role/{roleId}/monitors/query:
+    post:
+      operationId: postMonitorsQuery
+      summary: Collect monitors relations
+      tags:
+        - Monitors
+      description: Get all (or some of) the monitors relations which start from a role
+        of which a user is a member (either directly or indirectly).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Some filters, each of which must be valid for all returned monitors
+                relations
+              type: object
+              properties:
+                filter:
+                  description: Only return those monitors relations which match each of the
+                    specified filters
+                  type: object
+                  properties:
+                    id:
+                      description: Only return monitors relations with one of the specified ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    roleId:
+                      description: Only return monitors relations with one of the specified role ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    deviceId:
+                      description: Only return monitors relations with one of the specified device ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                  additionalProperties: false
+              additionalProperties: false
+        description: Some filters, each of which must be valid for all returned monitors
+          relations
+      parameters:
+        - schema:
+            $ref: "#/components/schemas/def-13"
+          in: path
+          name: roleId
+          required: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: The monitors relations which start from roles of which the user is
+            a member and which match all the specified filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monitors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-32"
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+  /v1/role/{roleId}/monitors/{monitorsId}:
+    put:
+      operationId: putMonitorsById
+      summary: Update an existing monitors relation
+      tags:
+        - Monitors
+      description: >-
+        Update an existing monitors relation.<br><br>
+                To execute this query, the user must be a member of an authorizing role which satisfies both of the following conditions:
+                <ol>
+                  <li>
+                    One of the following role-related conditions is true:
+                    <ul>
+                      <li>
+                        The authorizing role has *direct or indirect* deviceManagement rights for the role from which the monitors relation is updated
+                      </li>
+                      <li>
+                        The authorizing role has *indirect* roleManagement rights for the role from which the monitors relation is updated
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    The authorizing role has monitorManagement rights for the device to which the monitors relation is updated
+                  </li>
+                </ol>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-31"
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role of the updated monitors relation
+        - schema:
+            anyOf:
+              - type: integer
+                minimum: 0
+              - type: array
+                items:
+                  type: integer
+                  minimum: 0
+          in: path
+          name: monitorsId
+          required: true
+          description: Id of the updated monitors relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 2
+      responses:
+        "200":
+          description: The updated monitors relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monitors:
+                    description: The updated monitors relation
+                    oneOf:
+                      - $ref: "#/components/schemas/def-32"
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/def-32"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+        "409":
+          description: The monitors relation cannot be updated, since it is the only
+            monitors relation of the device which allows monitorManagement
+            rights, and the proposed change would revoke these rights, resulting
+            in a device with uneditable monitors relations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    constant: 409
+                    example: 409
+                  error:
+                    type: string
+                    example: Conflict
+                  message:
+                    type: string
+                    example: The monitors relation cannot be updated, since it is the only monitors
+                      relation of the device which allows monitorManagement
+                      rights, and the proposed change would revoke these rights,
+                      resulting in a device with uneditable monitors relations.
+                additionalProperties: false
+    delete:
+      operationId: deleteMonitorsById
+      summary: Delete a monitors relation
+      tags:
+        - Monitors
+      description: >-
+        Delete a specified monitors relation. If the deleted monitors relation
+        was the only monitors relation of the connected device with
+        monitorManagement rights, the device and all its associated relations
+        will be deleted as well.<br><br>
+                To execute this query, the user must be a member of an authorizing role which satisfies both of the following conditions:
+                <ol>
+                  <li>
+                    One of the following role-related conditions is true:
+                    <ul>
+                      <li>
+                        The authorizing role has *direct or indirect* deviceManagement rights for the role from which the monitors relation is deleted
+                      </li>
+                      <li>
+                        The authorizing role has *indirect* roleManagement rights for the role from which the monitors relation is deleted
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    The authorizing role has monitorManagement rights for the device to which the monitors relation is deleted
+                  </li>
+                </ol>
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role of the deleted monitors relation
+        - schema:
+            anyOf:
+              - type: integer
+                minimum: 0
+              - type: array
+                items:
+                  type: integer
+                  minimum: 0
+          in: path
+          name: monitorsId
+          required: true
+          description: Id of the deleted monitors relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 3
+      responses:
+        "200":
+          description: The ids of the deleted nodes and relations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-6"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/role/{roleId}/member:
+    get:
+      operationId: getMember
+      summary: Collect member relations (replaced by POST
+        /v1/role/{roleId}/member/query)
+      tags:
+        - Member
+      description: Get all (or some of) the member relations which start from a role
+        where the user has (either directly or indirectly) userManagement
+        rights, and get those member relations involding the user itself. The
+        POST /v1/role/{roleId}/member/query is a preferable alternative, which
+        can better handle complex filters.
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: id
+          required: false
+          description: Only return member relations with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: string
+          in: query
+          name: userEmail
+          required: false
+          description: Only return member relations with one of the specified userEmails
+        - schema:
+            $ref: "#/components/schemas/def-13"
+          in: path
+          name: roleId
+          required: true
+      deprecated: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 4
+      responses:
+        "200":
+          description: The member relations which involve the user itself or start from a
+            role where the user has (direct or indirect) userManagement rights.
+            Of these relations, those which match all the specified filters are
+            returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-30"
+        "400":
+          description: Invalidly formatted query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+    put:
+      operationId: putMember
+      summary: Create or update a member relation
+      tags:
+        - Member
+      description: >-
+        Create a member relation (or update the existing one) between a role and
+        a user email<br><br>
+                A user can only execute this action if he is a member of an authorizing role which satisfies one of the following conditions:
+                <ul>
+                  <li>
+                    The authorizing role has *direct or indirect* userManagement rights for the role to which a member is added (or updated)
+                  </li>
+                  <li>
+                    The authorizing role has *indirect* roleManagement rights for the role to which a member is added (or updated)
+                  </li>
+                <ul>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-29"
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: userEmail
+          required: true
+          description: Email of the user of the newly created (or updated) member relation
+        - schema:
+            type: string
+          in: query
+          name: origin
+          required: false
+          description: Name of the mailbot configuration used to send an email in the case
+            that new user credentials are created
+        - schema:
+            $ref: "#/components/schemas/def-4"
+          in: query
+          name: language
+          required: false
+        - schema:
+            type: string
+          in: query
+          name: password
+          required: false
+          description: New user password in the case that new user is created
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role of the newly created (or updated) member relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 1
+      responses:
+        "200":
+          description: The newly created (or updated) member relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    $ref: "#/components/schemas/def-30"
+        "400":
+          description: Invalidly formatted body or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/role/{roleId}/member/query:
+    post:
+      operationId: postMemberQuery
+      summary: Collect member relations
+      tags:
+        - Member
+      description: Get all (or some of) the member relations which start from a role
+        where the user has (either directly or indirectly) userManagement
+        rights, and get those member relations involding the user itself.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Some filters, each of which must be valid for all returned member
+                relations
+              type: object
+              properties:
+                filter:
+                  description: Only return those member relations which match each of the
+                    specified filters
+                  type: object
+                  properties:
+                    id:
+                      description: Only return member relations with one of the specified ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    roleId:
+                      description: Only return member relations with one of the specified role ids
+                      type: array
+                      items:
+                        type: integer
+                        minimum: 0
+                    userEmail:
+                      description: Only return member relations with one of the specified userEmails
+                      type: array
+                      items:
+                        type: string
+                  additionalProperties: false
+              additionalProperties: false
+        description: Some filters, each of which must be valid for all returned member
+          relations
+      parameters:
+        - schema:
+            $ref: "#/components/schemas/def-13"
+          in: path
+          name: roleId
+          required: true
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: The member relations which involve the user itself or start from a
+            role where the user has (direct or indirect) userManagement rights.
+            Of these relations, those which match all the specified filters are
+            returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/def-30"
+        "400":
+          description: Invalidly formatted body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+  /v1/role/{roleId}/member/{memberId}:
+    put:
+      operationId: putMemberById
+      summary: Update an existing member relation
+      tags:
+        - Member
+      description: >-
+        A user can only execute this action if he is a member of an authorizing
+        role which satisfies one of the following conditions:
+                <ul>
+                  <li>
+                    The authorizing role has *direct or indirect* userManagement rights for the role to which a member is updated
+                  </li>
+                  <li>
+                    The authorizing role has *indirect* roleManagement rights for the role to which a member is updated
+                  </li>
+                </ul>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/def-29"
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role of the updated member relation
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: memberId
+          required: true
+          description: Id of the updated member relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 2
+      responses:
+        "200":
+          description: The updated member relation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    $ref: "#/components/schemas/def-30"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+    delete:
+      operationId: deleteMemberById
+      summary: Delete a member relation
+      tags:
+        - Member
+      description: >-
+        A user can only execute this action if he is a member of an authorizing
+        role which satisfies one of the following conditions:
+                <ul>
+                  <li>
+                    The authorizing role has *direct or indirect* userManagement rights for the role to which a member is deleted
+                  </li>
+                  <li>
+                    The authorizing role has *indirect* roleManagement rights for the role to which a member is deleted
+                  </li>
+                  <li>
+                    The authorizing role is the role from which a member is removed, and the removed member is the user itself
+                  </li>
+                </ul>
+      parameters:
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: roleId
+          required: true
+          description: Id of the role of the deleted member relation
+        - schema:
+            type: integer
+            minimum: 0
+          in: path
+          name: memberId
+          required: true
+          description: Id of the deleted member relation
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 3
+      responses:
+        "200":
+          description: The id of the deleted member (in the deletedRelationIds property)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-6"
+        "400":
+          description: Invalidly formatted body or query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have appropriate role management rights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+  /v1/company:
+    get:
+      operationId: getCompany
+      summary: Collect companies associated with the user
+      tags:
+        - Company
+      description: "Collect company roles associated with the user. This includes:
+
+        \      <ul>
+
+        \        <li>
+
+        \          Any company roles of which the user is either a direct or
+        indirect member, i.e. the user can operate on behalf of that company
+
+        \        </li>
+
+        \        <li>
+
+        \          Any company role such that the user is a member of a role
+        which is directly or indirectly managed by that company
+
+        \        </li>
+
+        \      </ul>
+
+        \      "
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: id
+          required: false
+          description: Only return companies with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          in: query
+          name: uuid
+          required: false
+          description: Only return companies with one of the specified uuids
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: roleId
+          required: false
+          description: Only return companies managing roles with one of the specified ids
+        - schema:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+          in: query
+          name: viewId
+          required: false
+          description: Only return roles with one or more views relations to a view with
+            one of the specified view ids
+        - schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/def-42"
+          in: query
+          name: viewInsightsVersion
+          required: false
+          description: Only return roles with one or more views relations to a view with
+            one of the specified insights versions
+      security:
+        - accessBearerAuth: []
+      x-priority: 0
+      x-public: true
+      responses:
+        "200":
+          description: An array with companies which manage the user or are managed by the
+            user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          minimum: 0
+                        uuid:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                      required:
+                        - id
+                        - name
+                      additionalProperties: false
+        "401":
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+  /v1/license/claim:
+    post:
+      operationId: claimLicense
+      summary: Claim a license for a controller
+      tags:
+        - License
+      description: Link a license to a controller by creating an entry in license_datalink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                licenseKey:
+                  description: The license key to claim
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                nodeId:
+                  description: The nodeId of the controller to link the license to
+                  type: string
+                  minLength: 1
+              required:
+                - licenseKey
+                - nodeId
+              additionalProperties: false
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 0
+      responses:
+        "200":
+          description: License successfully claimed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  license:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      key:
+                        type: string
+                      nodeId:
+                        type: string
+        "400":
+          description: Invalid request body or license already claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "404":
+          description: License or controller not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-3"
+  /v1/license/controller/{nodeId}:
+    get:
+      operationId: getLicensesByController
+      summary: Get licenses linked to a controller by nodeId
+      tags:
+        - License
+      description: Retrieve all licenses that are linked to a specific controller
+        identified by its nodeId
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          in: path
+          name: nodeId
+          required: true
+          description: The nodeId of the controller
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 1
+      responses:
+        "200":
+          description: List of licenses linked to the controller
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  licenses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        key:
+                          type: string
+                        gridKw:
+                          type:
+                            - "null"
+                            - integer
+                        solarKw:
+                          type:
+                            - "null"
+                            - integer
+                        batteryKw:
+                          type:
+                            - "null"
+                            - integer
+                        evKw:
+                          type:
+                            - "null"
+                            - integer
+                        creationDate:
+                          type: string
+                          format: date-time
+                        activationDate:
+                          type:
+                            - "null"
+                            - string
+                          format: date-time
+                        duration:
+                          type: integer
+                        deactivationDate:
+                          type:
+                            - "null"
+                            - string
+                          format: date-time
+                        type:
+                          type: string
+                          enum:
+                            - residential
+                            - commercial
+        "401":
+          description: Authentication required or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "404":
+          description: Controller not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-3"
+  /v1/license/activate:
+    post:
+      operationId: activateLicense
+      summary: Activate a license
+      tags:
+        - License
+      description: Set the activation date for a license to the current timestamp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  description: The license key to activate
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                activationIso:
+                  description: Optional activation timestamp (ISO 8601 string)
+                  type: string
+                  format: date-time
+              required:
+                - key
+              additionalProperties: false
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 2
+      responses:
+        "200":
+          description: License successfully activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  license:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      key:
+                        type: string
+                      gridKw:
+                        type:
+                          - "null"
+                          - integer
+                      solarKw:
+                        type:
+                          - "null"
+                          - integer
+                      batteryKw:
+                        type:
+                          - "null"
+                          - integer
+                      evKw:
+                        type:
+                          - "null"
+                          - integer
+                      creationDate:
+                        type: string
+                        format: date-time
+                      activationDate:
+                        type:
+                          - "null"
+                          - string
+                        format: date-time
+                      duration:
+                        type: integer
+                      deactivationDate:
+                        type:
+                          - "null"
+                          - string
+                        format: date-time
+                      type:
+                        type: string
+                        enum:
+                          - residential
+                          - commercial
+        "400":
+          description: License is already activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-0"
+        "401":
+          description: Authentication required or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have permission to activate this license
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+        "404":
+          description: License not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-3"
+  /v1/license/customer/{customerId}:
+    get:
+      operationId: getLicensesByCustomer
+      summary: Get licenses for a customer
+      tags:
+        - License
+      description: Retrieve all licenses associated with a customer through their orders
+      parameters:
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: includeDatalinks
+          required: false
+          description: Include linked datalink IDs for each license
+        - schema:
+            type: string
+            format: uuid
+          in: path
+          name: customerId
+          required: true
+          description: The UUID of the customer
+      security:
+        - accessBearerAuth: []
+      x-public: true
+      x-priority: 3
+      responses:
+        "200":
+          description: List of licenses for the customer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  licenses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        key:
+                          type: string
+                        gridKw:
+                          type:
+                            - "null"
+                            - integer
+                        solarKw:
+                          type:
+                            - "null"
+                            - integer
+                        batteryKw:
+                          type:
+                            - "null"
+                            - integer
+                        evKw:
+                          type:
+                            - "null"
+                            - integer
+                        creationDate:
+                          type: string
+                          format: date-time
+                        activationDate:
+                          type:
+                            - "null"
+                            - string
+                          format: date-time
+                        duration:
+                          type: integer
+                        deactivationDate:
+                          type:
+                            - "null"
+                            - string
+                          format: date-time
+                        type:
+                          type: string
+                          enum:
+                            - residential
+                            - commercial
+                        datalinks:
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+        "401":
+          description: Authentication required or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-1"
+        "403":
+          description: User does not have access to this customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-2"
+        "404":
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/def-3"
+servers:
+  - url: https://api.eniris.be
+tags:
+  - name: User
+    description: Users entities hold information of a particular user (identified by
+      a unique email address). Users may be member of one or more roles. For
+      every user, login information such as hashed and salted passwords and the
+      last failed login timestamps are stored. User objects may also store some
+      personal preference information.
+  - name: Role
+    description: Users do not hold any permissions directly, but acquire permissions
+      by being a member of a role. Roles have a name and are linked up to users,
+      views and devices. Notably, roles may manage other roles, in which case
+      the managing role assumes all rights of the managed role. The resulting
+      role management structure is organized according to a directed acyclic
+      graph (commonly a hierarchical tree structure).
+  - name: Device
+    description: Devices hold information about a perticular device/entity/location
+      which is monitored. Devices are monitored by roles.
+  - name: Member
+    description: Member relations indicate that a user is a member of a role.
+  - name: Manages
+    description: Manages relations specify a hierarchical relation between a
+      managing (parent) role and a managed (child) role. Members of the managed
+      role automatically have all rights of the managed role. Attributes of the
+      manages relation specify addition rights which members of the managing
+      role hold over the managed role.
+  - name: Monitors
+    description: Monitors relations specify a relation between a monitoring role and
+      a monitored device. It specifies which device properties may be read or
+      edited by members of the monitoring role. Additionally, it specifies
+      wether monitoring users may create other monitors relations to the
+      monitored device.
+  - name: Telemetry
+    description: Operations about collecting timeseries data
+externalDocs:
+  description: Find out more about Eniris
+  url: https://eniris.be
