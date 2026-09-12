@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Eniris.Configuration;
 using Eniris.Data;
 using Eniris.Examples.Examples;
+using Eniris.Examples.Services;
 using Eniris.Models;
 using Eniris.Telemetry;
 
@@ -107,6 +108,9 @@ public static class ResponseFormatter
         ArgumentNullException.ThrowIfNull(query);
         return $"{title}:{Environment.NewLine}{query.ToJsonString(JsonOptions)}";
     }
+
+    public static string FormatPersistence(SqlServerPersistenceSummary summary) =>
+        $"Persisted {summary.RowCount} telemetry row(s) into dbo.{summary.TableName}.";
 
     public static string DescribeField(string field)
     {

@@ -92,4 +92,20 @@ public sealed class HistoricalTelemetryExample
         var records = await fetcher.FetchAsync(device, source, fields, start.UtcDateTime, end.UtcDateTime, cancellationToken: cancellationToken).ConfigureAwait(false);
         return records.OrderBy(static record => record.Timestamp).ToArray();
     }
+
+    public IAsyncEnumerable<IReadOnlyList<TelemetryRecord>> StreamChunkedRangeQueryAsync(
+        EnirisDevice device,
+        TelemetrySource source,
+        string[] fields,
+        DateTimeOffset start,
+        DateTimeOffset end,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(device);
+        ArgumentNullException.ThrowIfNull(fields);
+
+        var fetcher = new HistoricalDataFetcher(_client);
+        _logger.LogInformation("Fetching chunked historical telemetry for {DeviceName} from {Start} to {End} for SQL persistence", device.Name, start, end);
+        return fetcher.FetchBatchesAsync(device, source, fields, start.UtcDateTime, end.UtcDateTime, cancellationToken: cancellationToken);
+    }
 }

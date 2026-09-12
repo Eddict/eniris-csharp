@@ -1,4 +1,5 @@
 #nullable enable
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Eniris.Api;
 using Eniris.Data;
@@ -49,16 +50,16 @@ public sealed class HistoricalDataFetcher
     }
 
     /// <summary>
-    /// Fetches historical telemetry for a single device/source pair.
+    /// Fetches historical telemetry for a single device/source pair in batches.
     /// </summary>
-    public async Task<IEnumerable<TelemetryRecord>> FetchAsync(
+    public async IAsyncEnumerable<IReadOnlyList<TelemetryRecord>> FetchBatchesAsync(
         EnirisDevice device,
         TelemetrySource source,
         string[] fields,
         DateTime from,
         DateTime to,
         TimeSpan? chunkSize = null,
-        CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(device);
         ArgumentNullException.ThrowIfNull(source);
@@ -81,10 +82,9 @@ public sealed class HistoricalDataFetcher
             .ToArray();
         if (requestQuery.Length == 0)
         {
-            return Array.Empty<TelemetryRecord>();
+            yield break;
         }
 
-        var records = new List<TelemetryRecord>();
         var currentFrom = from;
         while (currentFrom < to)
         {
@@ -111,9 +111,28 @@ public sealed class HistoricalDataFetcher
 
             var requests = new[] { new TelemetryRequest(device, source, query) };
             var responses = await ExecuteWithRetryAsync(requests, cancellationToken).ConfigureAwait(false);
-            records.AddRange(TelemetryResponseParser.ParseHistorical(requests, responses));
+            yield return TelemetryResponseParser.ParseHistorical(requests, responses).ToArray();
 
             currentFrom = currentTo;
+        }
+    }
+
+    /// <summary>
+    /// Fetches historical telemetry for a single device/source pair.
+    /// </summary>
+    public async Task<IEnumerable<TelemetryRecord>> FetchAsync(
+        EnirisDevice device,
+        TelemetrySource source,
+        string[] fields,
+        DateTime from,
+        DateTime to,
+        TimeSpan? chunkSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        var records = new List<TelemetryRecord>();
+        await foreach (var batch in FetchBatchesAsync(device, source, fields, from, to, chunkSize, cancellationToken).ConfigureAwait(false))
+        {
+            records.AddRange(batch);
         }
 
         return records;

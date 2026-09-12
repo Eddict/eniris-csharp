@@ -9,11 +9,15 @@ public sealed class ExampleConfig
 
     public string? Password { get; set; }
 
+    public string? SqlServerConnectionString { get; set; }
+
     public Uri AuthBaseUri { get; set; } = EnirisConstants.DefaultAuthBaseUri;
 
     public Uri ApiBaseUri { get; set; } = EnirisConstants.DefaultApiBaseUri;
 
     public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public int SqlServerBatchSize { get; set; } = 1000;
 
     public string[] PreferredTelemetryFields { get; set; } = ["actualPowerTot_W", "voltageL1N_V", "currentL1_A"];
 
