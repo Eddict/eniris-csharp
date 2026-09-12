@@ -131,10 +131,10 @@ public sealed class SqlServerTelemetryWriter
                 record.Measurement,
                 record.RetentionPolicy,
                 record.Field,
-                record.Value ?? DBNull.Value,
+                record.Value is null ? DBNull.Value : record.Value,
                 record.ValueType,
-                record.Unit ?? DBNull.Value,
-                record.DeviceType ?? DBNull.Value,
+                record.Unit is null ? DBNull.Value : record.Unit,
+                record.DeviceType is null ? DBNull.Value : record.DeviceType,
                 record.Timestamp,
                 record.RecordedAt);
         }
