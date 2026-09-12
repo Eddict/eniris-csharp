@@ -500,7 +500,12 @@ public sealed class EnirisDevice
         JsonNode? current = data;
         foreach (var part in path)
         {
-            current = current?[part];
+            if (current is not JsonObject currentObject)
+            {
+                return null;
+            }
+
+            current = currentObject[part];
         }
 
         return ReadString(current);
