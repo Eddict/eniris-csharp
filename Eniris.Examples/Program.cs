@@ -3,6 +3,7 @@ using Eniris.Api;
 using Eniris.Examples.Examples;
 using Eniris.Examples.Helpers;
 using Eniris.Examples.Models;
+using Eniris.Examples.Services;
 using Eniris.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ internal static class Program
         ("5", "Fetch 30-day chunked historical telemetry"),
         ("6", "Show telemetry query builder examples (generic or discovered source)"),
         ("7", "Run complete walkthrough"),
+        ("8", "Fetch 30-day historical telemetry and persist it to SQL Server"),
         ("0", "Exit"),
     ];
 
@@ -60,6 +62,7 @@ internal static class Program
         services.AddScoped<LatestTelemetryExample>();
         services.AddScoped<HistoricalTelemetryExample>();
         services.AddScoped<TelemetryQueryBuilderExample>();
+        services.AddScoped<SqlServerTelemetryWriter>();
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         using var scope = provider.CreateScope();
@@ -138,6 +141,16 @@ internal static class Program
                             historicalValues = await FetchHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, walkthroughRange, chunked: false, cancellationTokenSource.Token).ConfigureAwait(false);
                             Console.WriteLine(ResponseFormatter.FormatHistorical(historicalValues, walkthroughRange));
                             DisplayQueries(scope.ServiceProvider, discovery);
+                            break;
+
+                        case "8":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            var sqlRange = DateRangeHelper.LastDays(30);
+                            historicalValues = await FetchHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, sqlRange, chunked: true, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatHistorical(historicalValues, sqlRange));
+                            var persisted = await PersistHistoricalAsync(scope.ServiceProvider, historicalValues, exampleConfig, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine(ResponseFormatter.FormatPersistence(persisted));
                             break;
                     }
                 }
@@ -237,6 +250,17 @@ internal static class Program
         {
             Console.WriteLine(ResponseFormatter.FormatQuery(name, query));
         }
+    }
+
+    private static async Task<SqlServerPersistenceSummary> PersistHistoricalAsync(
+        IServiceProvider serviceProvider,
+        IEnumerable<Eniris.Data.TelemetryRecord> records,
+        ExampleConfig config,
+        CancellationToken cancellationToken)
+    {
+        config.SqlServerConnectionString = ResolveRequiredValue("SQL Server connection string", config.SqlServerConnectionString, secret: true);
+        var writer = serviceProvider.GetRequiredService<SqlServerTelemetryWriter>();
+        return await writer.PersistAsync(records, cancellationToken).ConfigureAwait(false);
     }
 
     private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)

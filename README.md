@@ -45,6 +45,7 @@ A runnable example app lives in `Eniris.Examples/` and demonstrates:
 - companies, roles, monitors, device discovery, and controller grouping
 - latest telemetry queries for common power and voltage fields
 - historical telemetry queries over 7-day and 30-day ranges
+- persisting historical telemetry records into SQL Server with `SqlBulkCopy`
 - `where.time` query construction, namespace examples, and aggregation examples
 
 Run it with:
@@ -53,7 +54,7 @@ Run it with:
 dotnet run --project Eniris.Examples/Eniris.Examples.csproj
 ```
 
-Configuration can come from `Eniris.Examples/appsettings.json` or environment variables such as `Eniris__Username`, `Eniris__Password`, `Eniris__AuthBaseUri`, and `Eniris__ApiBaseUri`.
+Configuration can come from `Eniris.Examples/appsettings.json` or environment variables such as `Eniris__Username`, `Eniris__Password`, `Eniris__SqlServerConnectionString`, `Eniris__AuthBaseUri`, and `Eniris__ApiBaseUri`.
 
 Expected console output includes controller/device hierarchy, latest telemetry timestamps and values, and historical row counts with covered date ranges.
 
@@ -79,3 +80,5 @@ foreach (TelemetryRecord record in records)
     Console.WriteLine($"{record.Timestamp:o} {record.DeviceName} {record.Field}={record.Value}");
 }
 ```
+
+To persist retrieved historical data into SQL Server, use the example app menu option `8`. It fetches chunked historical telemetry, ensures `dbo.TelemetryData` exists, and bulk inserts the mapped `TelemetryRecord` rows with SQL Server's native bulk copy support.
