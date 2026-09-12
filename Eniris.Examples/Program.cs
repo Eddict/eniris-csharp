@@ -7,7 +7,9 @@ using Eniris.Examples.Services;
 using Eniris.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Eniris.Examples;
 
@@ -35,37 +37,42 @@ internal static class Program
             cancellationTokenSource.Cancel();
         };
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-            .AddEnvironmentVariables()
-            .Build();
-
-        var exampleConfig = configuration.GetSection("Eniris").Get<ExampleConfig>() ?? new ExampleConfig();
-
-        var services = new ServiceCollection();
-        services.AddSingleton(exampleConfig);
-        services.AddSingleton<IConfiguration>(configuration);
-        services.AddLogging(builder =>
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
         {
-            builder.ClearProviders();
-            builder.AddConfiguration(configuration.GetSection("Logging"));
-            builder.AddSimpleConsole(options =>
-            {
-                options.SingleLine = true;
-                options.TimestampFormat = "HH:mm:ss ";
-            });
+            Args = args,
+            ContentRootPath = AppContext.BaseDirectory,
         });
-        services.AddEniris(exampleConfig.ApplyTo);
-        services.AddScoped<AuthenticationExample>();
-        services.AddScoped<DeviceDiscoveryExample>();
-        services.AddScoped<LatestTelemetryExample>();
-        services.AddScoped<HistoricalTelemetryExample>();
-        services.AddScoped<TelemetryQueryBuilderExample>();
-        services.AddScoped<SqlServerTelemetryWriter>();
 
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
-        using var scope = provider.CreateScope();
+        builder.Configuration.Sources.Clear();
+        builder.Configuration
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: false)
+            .AddEnvironmentVariables();
+
+        var exampleConfig = builder.Configuration.GetSection("Eniris").Get<ExampleConfig>() ?? new ExampleConfig();
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+        builder.Logging.AddSimpleConsole(options =>
+        {
+            options.SingleLine = true;
+            options.TimestampFormat = "HH:mm:ss ";
+        });
+        builder.Services.AddSerilog((services, loggerConfiguration) => loggerConfiguration
+            .ReadFrom.Configuration(builder.Configuration)
+            .ReadFrom.Services(services));
+
+        builder.Services.AddSingleton(exampleConfig);
+        builder.Services.AddEniris(exampleConfig.ApplyTo);
+        builder.Services.AddScoped<AuthenticationExample>();
+        builder.Services.AddScoped<DeviceDiscoveryExample>();
+        builder.Services.AddScoped<LatestTelemetryExample>();
+        builder.Services.AddScoped<HistoricalTelemetryExample>();
+        builder.Services.AddScoped<TelemetryQueryBuilderExample>();
+        builder.Services.AddScoped<SqlServerTelemetryWriter>();
+
+        using var host = builder.Build();
+        using var scope = host.Services.CreateScope();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
 
         AuthenticationSummary? authentication = null;
