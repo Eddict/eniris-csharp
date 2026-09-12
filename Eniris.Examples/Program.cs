@@ -147,9 +147,8 @@ internal static class Program
                             authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
                             discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
                             var sqlRange = DateRangeHelper.LastDays(30);
-                            historicalValues = await FetchHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, sqlRange, chunked: true, cancellationTokenSource.Token).ConfigureAwait(false);
-                            Console.WriteLine(ResponseFormatter.FormatHistorical(historicalValues, sqlRange));
-                            var persisted = await PersistHistoricalAsync(scope.ServiceProvider, historicalValues, exampleConfig, cancellationTokenSource.Token).ConfigureAwait(false);
+                            var persisted = await PersistHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, sqlRange, cancellationTokenSource.Token).ConfigureAwait(false);
+                            Console.WriteLine($"Fetched and persisted {persisted.RowCount} historical telemetry row(s) for {sqlRange.Label}.");
                             Console.WriteLine(ResponseFormatter.FormatPersistence(persisted));
                             break;
                     }
@@ -254,13 +253,20 @@ internal static class Program
 
     private static async Task<SqlServerPersistenceSummary> PersistHistoricalAsync(
         IServiceProvider serviceProvider,
-        IEnumerable<Eniris.Data.TelemetryRecord> records,
+        DeviceDiscoverySummary discovery,
         ExampleConfig config,
+        ExampleDateRange range,
         CancellationToken cancellationToken)
     {
         config.SqlServerConnectionString = ResolveRequiredValue("SQL Server connection string", config.SqlServerConnectionString, secret: true);
+        var target = SelectTelemetryTarget(discovery.Devices, config.PreferredTelemetryFields)
+            ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
+
+        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
+        var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var writer = serviceProvider.GetRequiredService<SqlServerTelemetryWriter>();
-        return await writer.PersistAsync(records, cancellationToken).ConfigureAwait(false);
+        var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken);
+        return await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
     }
 
     private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)

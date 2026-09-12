@@ -70,6 +70,51 @@ public sealed class SqlServerTelemetryWriter
         return new SqlServerPersistenceSummary(_tableName, persistedCount);
     }
 
+    public async Task<SqlServerPersistenceSummary> PersistBatchesAsync(
+        IAsyncEnumerable<IReadOnlyList<TelemetryRecord>> batches,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(batches);
+
+        var connectionString = _config.SqlServerConnectionString;
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("A SQL Server connection string is required to persist telemetry records.");
+        }
+
+        var batchSize = Math.Max(1, _config.SqlServerBatchSize);
+        await using var batchEnumerator = batches.GetAsyncEnumerator(cancellationToken);
+        if (!await batchEnumerator.MoveNextAsync().ConfigureAwait(false))
+        {
+            return new SqlServerPersistenceSummary(_tableName, 0);
+        }
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await EnsureTableAsync(connection, cancellationToken).ConfigureAwait(false);
+
+        using var bulkCopy = new SqlBulkCopy(connection)
+        {
+            BatchSize = batchSize,
+            DestinationTableName = $"[dbo].[{_tableName}]",
+            EnableStreaming = true,
+        };
+
+        AddColumnMappings(bulkCopy);
+
+        var persistedCount = 0;
+        do
+        {
+            using var dataTable = CreateDataTable(batchEnumerator.Current);
+            _logger.LogInformation("Persisting {RecordCount} telemetry record(s) into SQL Server table {TableName}", batchEnumerator.Current.Count, _tableName);
+            await bulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+            persistedCount += batchEnumerator.Current.Count;
+        }
+        while (await batchEnumerator.MoveNextAsync().ConfigureAwait(false));
+
+        return new SqlServerPersistenceSummary(_tableName, persistedCount);
+    }
+
     private async Task EnsureTableAsync(SqlConnection connection, CancellationToken cancellationToken)
     {
         var escapedTableName = _tableName.Replace("]", "]]", StringComparison.Ordinal);
@@ -79,7 +124,7 @@ public sealed class SqlServerTelemetryWriter
                 CREATE TABLE [dbo].[{escapedTableName}]
                 (
                     [Id] BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                    [DeviceId] INT NOT NULL,
+                    [DeviceId] BIGINT NOT NULL,
                     [DeviceName] NVARCHAR(255) NOT NULL,
                     [Measurement] NVARCHAR(255) NOT NULL,
                     [RetentionPolicy] NVARCHAR(255) NOT NULL,
@@ -120,7 +165,7 @@ public sealed class SqlServerTelemetryWriter
     private static DataTable CreateDataTable(IEnumerable<TelemetryRecord> records)
     {
         var table = new DataTable();
-        table.Columns.Add(nameof(TelemetryRecord.DeviceId), typeof(int));
+        table.Columns.Add(nameof(TelemetryRecord.DeviceId), typeof(long));
         table.Columns.Add(nameof(TelemetryRecord.DeviceName), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.Measurement), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.RetentionPolicy), typeof(string));
@@ -135,7 +180,7 @@ public sealed class SqlServerTelemetryWriter
         foreach (var record in records)
         {
             table.Rows.Add(
-                record.DeviceId,
+                (long)record.DeviceId,
                 record.DeviceName,
                 record.Measurement,
                 record.RetentionPolicy,
