@@ -227,7 +227,11 @@ internal static class Program
     {
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var selectedFieldCount = chunked ? 2 : 1;
-        using var targets = SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields, selectedFieldCount).GetEnumerator();
+        using var targets = SelectTelemetryTargets(
+            discovery.Devices,
+            config.PreferredTelemetryFields,
+            selectedFieldCount,
+            minimumFieldCount: 1).GetEnumerator();
         if (!targets.MoveNext())
         {
             throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
@@ -245,7 +249,11 @@ internal static class Program
         TelemetrySource? source = null;
         if (discovery is not null)
         {
-            using var targets = SelectTelemetryTargets(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"], selectedFieldCount: 2).GetEnumerator();
+            using var targets = SelectTelemetryTargets(
+                discovery.Devices,
+                ["actualPowerTot_W", "voltageL1N_V"],
+                selectedFieldCount: 2,
+                minimumFieldCount: 1).GetEnumerator();
             if (targets.MoveNext())
             {
                 source = targets.Current.Source;
@@ -277,7 +285,11 @@ internal static class Program
         var persistedCount = 0;
         var matchedAny = false;
 
-        foreach (var target in SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields, selectedFieldCount: 2))
+        foreach (var target in SelectTelemetryTargets(
+            discovery.Devices,
+            config.PreferredTelemetryFields,
+            selectedFieldCount: 2,
+            minimumFieldCount: 1))
         {
             matchedAny = true;
             logger.LogInformation(
@@ -303,14 +315,15 @@ internal static class Program
     private static IEnumerable<(EnirisDevice Device, TelemetrySource Source, string[] Fields)> SelectTelemetryTargets(
         IReadOnlyList<EnirisDevice> devices,
         IReadOnlyList<string> requestedFields,
-        int selectedFieldCount)
+        int selectedFieldCount,
+        int minimumFieldCount)
     {
         foreach (var device in devices.Where(static candidate => candidate.TelemetrySources.Count > 0))
         {
             foreach (var source in device.TelemetrySources)
             {
                 var fields = SelectFields(source, requestedFields).Take(selectedFieldCount).ToArray();
-                if (fields.Length > 0)
+                if (fields.Length >= minimumFieldCount)
                 {
                     yield return (device, source, fields);
                 }
