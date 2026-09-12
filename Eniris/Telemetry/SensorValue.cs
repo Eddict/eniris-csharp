@@ -10,5 +10,5 @@ public sealed record SensorValue(
     SensorKey Key,
     EnirisDevice Device,
     TelemetrySource Source,
-    object? Value,
-    DateTimeOffset? Timestamp);
+    object Value,
+    DateTimeOffset Timestamp);

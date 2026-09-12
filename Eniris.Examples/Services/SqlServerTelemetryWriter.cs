@@ -124,17 +124,16 @@ public sealed class SqlServerTelemetryWriter
                 CREATE TABLE [dbo].[{escapedTableName}]
                 (
                     [Id] BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                    [DeviceId] BIGINT NOT NULL,
-                    [DeviceName] NVARCHAR(255) NOT NULL,
-                    [Measurement] NVARCHAR(255) NOT NULL,
-                    [RetentionPolicy] NVARCHAR(255) NOT NULL,
-                    [Field] NVARCHAR(255) NOT NULL,
-                    [Value] NVARCHAR(MAX) NULL,
-                    [ValueType] NVARCHAR(32) NOT NULL,
-                    [Unit] NVARCHAR(64) NULL,
-                    [DeviceType] NVARCHAR(255) NULL,
-                    [Timestamp] DATETIMEOFFSET NOT NULL,
-                    [RecordedAt] DATETIMEOFFSET NOT NULL
+                    [DeviceId] INT NOT NULL,
+                    [DeviceName] VARCHAR(96) NOT NULL,
+                    [Measurement] VARCHAR(48) NOT NULL,
+                    [RetentionPolicy] VARCHAR(16) NOT NULL,
+                    [Field] VARCHAR(48) NOT NULL,
+                    [Value] VARCHAR(48) NOT NULL,
+                    [ValueType] VARCHAR(16) NOT NULL,
+                    [Unit] VARCHAR(4) NULL,
+                    [DeviceType] VARCHAR(48) NOT NULL,
+                    [Timestamp] DATETIMEOFFSET NOT NULL
                 );
 
                 CREATE INDEX [IX_{escapedTableName}_DeviceId_Timestamp]
@@ -159,13 +158,12 @@ public sealed class SqlServerTelemetryWriter
         bulkCopy.ColumnMappings.Add(nameof(TelemetryRecord.Unit), nameof(TelemetryRecord.Unit));
         bulkCopy.ColumnMappings.Add(nameof(TelemetryRecord.DeviceType), nameof(TelemetryRecord.DeviceType));
         bulkCopy.ColumnMappings.Add(nameof(TelemetryRecord.Timestamp), nameof(TelemetryRecord.Timestamp));
-        bulkCopy.ColumnMappings.Add(nameof(TelemetryRecord.RecordedAt), nameof(TelemetryRecord.RecordedAt));
     }
 
     private static DataTable CreateDataTable(IEnumerable<TelemetryRecord> records)
     {
         var table = new DataTable();
-        table.Columns.Add(nameof(TelemetryRecord.DeviceId), typeof(long));
+        table.Columns.Add(nameof(TelemetryRecord.DeviceId), typeof(int));
         table.Columns.Add(nameof(TelemetryRecord.DeviceName), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.Measurement), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.RetentionPolicy), typeof(string));
@@ -175,22 +173,20 @@ public sealed class SqlServerTelemetryWriter
         table.Columns.Add(nameof(TelemetryRecord.Unit), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.DeviceType), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.Timestamp), typeof(DateTimeOffset));
-        table.Columns.Add(nameof(TelemetryRecord.RecordedAt), typeof(DateTimeOffset));
 
         foreach (var record in records)
         {
             table.Rows.Add(
-                (long)record.DeviceId,
+                (int)record.DeviceId,
                 record.DeviceName,
                 record.Measurement,
                 record.RetentionPolicy,
                 record.Field,
-                record.Value is null ? DBNull.Value : record.Value,
+                record.Value,
                 record.ValueType,
                 record.Unit is null ? DBNull.Value : record.Unit,
-                record.DeviceType is null ? DBNull.Value : record.DeviceType,
-                ToUtcOffset(record.Timestamp),
-                ToUtcOffset(record.RecordedAt));
+                record.DeviceType,
+                ToUtcOffset(record.Timestamp));
         }
 
         return table;

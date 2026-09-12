@@ -44,7 +44,7 @@ public class TelemetryRecord
     /// <summary>
     /// Gets or sets the persisted telemetry value.
     /// </summary>
-    public string? Value { get; set; }
+    public string Value { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the serialized value kind used to interpret <see cref="Value"/>.
@@ -59,15 +59,10 @@ public class TelemetryRecord
     /// <summary>
     /// Gets or sets the device type exposed by Eniris.
     /// </summary>
-    public string? DeviceType { get; set; }
+    public string DeviceType { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the timestamp when the measurement was recorded.
     /// </summary>
     public DateTime Timestamp { get; set; }
-
-    /// <summary>
-    /// Gets or sets the timestamp when the row was prepared for persistence.
-    /// </summary>
-    public DateTime RecordedAt { get; set; } = DateTime.UtcNow;
 }

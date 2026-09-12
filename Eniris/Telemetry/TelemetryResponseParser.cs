@@ -62,11 +62,6 @@ public static class TelemetryResponseParser
 
         foreach (var value in ParseCore(requests, responses, latestOnly: false, restrictToKnownFields: false))
         {
-            if (value.Timestamp is null)
-            {
-                continue;
-            }
-
             yield return TelemetryRecordMapper.MapSensorValue(value, value.Device, value.Source);
         }
     }
@@ -176,13 +171,13 @@ public static class TelemetryResponseParser
         return latestRow ?? rows[^1] as JsonArray;
     }
 
-    private static DateTimeOffset? ExtractTimestamp(IReadOnlyList<string> columns, JsonArray row)
+    private static DateTimeOffset ExtractTimestamp(IReadOnlyList<string> columns, JsonArray row)
     {
         var timeIndex = columns.ToList().IndexOf("time");
-        if (timeIndex < 0 || timeIndex >= row.Count)
-        {
-            return null;
-        }
+        //if (timeIndex < 0 || timeIndex >= row.Count)
+        //{
+        //    return null;
+        //}
 
         var node = row[timeIndex];
         if (node is JsonValue value)
@@ -206,7 +201,8 @@ public static class TelemetryResponseParser
             }
         }
 
-        return null;
+        return DateTimeOffset.Now;
+        //return null;
     }
 
     private static DateTimeOffset? ExtractTimestampValue(int timeIndex, JsonArray row)
@@ -239,7 +235,7 @@ public static class TelemetryResponseParser
         return null;
     }
 
-    private static object? NormalizeValue(string field, JsonNode rawValue)
+    private static object NormalizeValue(string field, JsonNode rawValue)
     {
         if (field.EndsWith("_frac", StringComparison.Ordinal) && TryReadDouble(rawValue, out var fraction))
         {

@@ -23,8 +23,9 @@ public static class TelemetryRecordMapper
         ArgumentNullException.ThrowIfNull(sensorValue);
         ArgumentNullException.ThrowIfNull(device);
         ArgumentNullException.ThrowIfNull(source);
-        var timestamp = sensorValue.Timestamp ?? throw new InvalidOperationException("A telemetry timestamp is required to map a record for persistence.");
+
         var (value, valueType) = SerializeValue(sensorValue.Value);
+        ArgumentNullException.ThrowIfNull(value);
 
         return new TelemetryRecord
         {
@@ -36,9 +37,8 @@ public static class TelemetryRecordMapper
             Value = value,
             ValueType = valueType,
             Unit = GetUnit(sensorValue.Key.Field),
-            DeviceType = string.IsNullOrWhiteSpace(device.NodeType) ? null : device.NodeType,
-            Timestamp = timestamp.UtcDateTime,
-            RecordedAt = DateTime.UtcNow,
+            DeviceType = device.NodeType,
+            Timestamp = sensorValue.Timestamp.UtcDateTime,
         };
     }
 
@@ -102,14 +102,12 @@ public static class TelemetryRecordMapper
         return builder.ToString().Trim('_');
     }
 
-    private static (string? Value, string ValueType) SerializeValue(object? value) =>
+    private static (string? Value, string ValueType) SerializeValue(object value) =>
         value switch
         {
-            null => (null, "null"),
-            bool boolValue => (boolValue ? bool.TrueString : bool.FalseString, "boolean"),
-            sbyte or byte or short or ushort or int or uint or long or ulong =>
-                (Convert.ToString(value, CultureInfo.InvariantCulture), "integer"),
-            float or double or decimal =>
+            //null => (null, "null"),
+            bool boolValue => (boolValue ? "1" : "0", "number"),
+            sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal =>
                 (Convert.ToString(value, CultureInfo.InvariantCulture), "number"),
             DateTime dateTimeValue =>
                 (dateTimeValue.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture), "datetime"),
