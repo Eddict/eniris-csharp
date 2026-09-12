@@ -217,7 +217,8 @@ internal static class Program
             ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
 
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
-        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
+        var selectedFieldCount = chunked ? 2 : 1;
+        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(selectedFieldCount).ToArray();
         return chunked
             ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
             : await example.RunDirectRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
