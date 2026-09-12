@@ -287,18 +287,7 @@ internal static class Program
 
     private static IReadOnlyList<string> SelectFields(TelemetrySource source, IReadOnlyList<string> requestedFields)
     {
-        var availableFields = requestedFields
-            .Where(static field => !string.IsNullOrWhiteSpace(field))
-            .Where(field => source.Fields is null || source.Fields.Contains(field, StringComparer.Ordinal))
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-
-        if (availableFields.Length > 0)
-        {
-            return availableFields;
-        }
-
-        return source.Fields?.Take(2).ToArray() ?? [];
+        return TelemetryFieldSelection.SelectFields(source, requestedFields);
     }
 
     private static string ResolveRequiredValue(string label, string? currentValue, bool secret = false)
