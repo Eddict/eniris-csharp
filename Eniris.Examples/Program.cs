@@ -227,15 +227,16 @@ internal static class Program
     {
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var selectedFieldCount = chunked ? 2 : 1;
-
-        foreach (var target in SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields, selectedFieldCount))
+        using var targets = SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields, selectedFieldCount).GetEnumerator();
+        if (!targets.MoveNext())
         {
-            return chunked
-                ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
-                : await example.RunDirectRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
+            throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
         }
 
-        throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
+        var target = targets.Current;
+        return chunked
+            ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
+            : await example.RunDirectRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
     }
 
     private static void DisplayQueries(IServiceProvider serviceProvider, DeviceDiscoverySummary? discovery)
@@ -244,10 +245,10 @@ internal static class Program
         TelemetrySource? source = null;
         if (discovery is not null)
         {
-            foreach (var target in SelectTelemetryTargets(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"], selectedFieldCount: 2))
+            using var targets = SelectTelemetryTargets(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"], selectedFieldCount: 2).GetEnumerator();
+            if (targets.MoveNext())
             {
-                source = target.Source;
-                break;
+                source = targets.Current.Source;
             }
         }
 
