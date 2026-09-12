@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# ignore local appsettings (which overrides default appsettings.json)
+appsettings.local.json
