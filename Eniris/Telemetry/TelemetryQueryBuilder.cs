@@ -141,11 +141,17 @@ public static class TelemetryQueryBuilder
     private static JsonObject BuildTimeRangeWhere(DateTime from, DateTime to) =>
         new()
         {
-            ["time"] = new JsonObject
-            {
-                ["from"] = NormalizeTimestamp(from),
-                ["to"] = NormalizeTimestamp(to),
-            },
+            ["time"] = new JsonArray(
+                new JsonObject
+                {
+                    ["operator"] = ">=",
+                    ["value"] = NormalizeTimestamp(from),
+                },
+                new JsonObject
+                {
+                    ["operator"] = "<=",
+                    ["value"] = NormalizeTimestamp(to),
+                }),
         };
 
     private static JsonObject? MergeWhere(JsonObject? first, JsonObject? second)
