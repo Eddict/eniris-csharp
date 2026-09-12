@@ -32,6 +32,11 @@ public sealed class SqlServerTelemetryWriter
         ArgumentNullException.ThrowIfNull(records);
 
         var materializedRecords = records.ToArray();
+        if (materializedRecords.Length == 0)
+        {
+            return new SqlServerPersistenceSummary(_tableName, 0);
+        }
+
         var connectionString = _config.SqlServerConnectionString;
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -41,11 +46,6 @@ public sealed class SqlServerTelemetryWriter
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await EnsureTableAsync(connection, cancellationToken).ConfigureAwait(false);
-
-        if (materializedRecords.Length == 0)
-        {
-            return new SqlServerPersistenceSummary(_tableName, 0);
-        }
 
         using var dataTable = CreateDataTable(materializedRecords);
         using var bulkCopy = new SqlBulkCopy(connection)
@@ -64,10 +64,11 @@ public sealed class SqlServerTelemetryWriter
 
     private async Task EnsureTableAsync(SqlConnection connection, CancellationToken cancellationToken)
     {
-        const string commandText = """
-            IF OBJECT_ID(N'[dbo].[TelemetryData]', N'U') IS NULL
+        var escapedTableName = _tableName.Replace("]", "]]", StringComparison.Ordinal);
+        var commandText = $"""
+            IF OBJECT_ID(N'[dbo].[{escapedTableName}]', N'U') IS NULL
             BEGIN
-                CREATE TABLE [dbo].[TelemetryData]
+                CREATE TABLE [dbo].[{escapedTableName}]
                 (
                     [Id] BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
                     [DeviceId] INT NOT NULL,
@@ -83,8 +84,8 @@ public sealed class SqlServerTelemetryWriter
                     [RecordedAt] DATETIME2 NOT NULL
                 );
 
-                CREATE INDEX [IX_TelemetryData_DeviceId_Timestamp]
-                    ON [dbo].[TelemetryData] ([DeviceId], [Timestamp]);
+                CREATE INDEX [IX_{escapedTableName}_DeviceId_Timestamp]
+                    ON [dbo].[{escapedTableName}] ([DeviceId], [Timestamp]);
             END
             """;
 
