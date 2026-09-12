@@ -225,21 +225,32 @@ internal static class Program
         bool chunked,
         CancellationToken cancellationToken)
     {
-        var target = SelectTelemetryTarget(discovery.Devices, config.PreferredTelemetryFields)
-            ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
-
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var selectedFieldCount = chunked ? 2 : 1;
-        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(selectedFieldCount).ToArray();
-        return chunked
-            ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
-            : await example.RunDirectRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
+
+        foreach (var target in SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields, selectedFieldCount))
+        {
+            return chunked
+                ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
+                : await example.RunDirectRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
+        }
+
+        throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
     }
 
     private static void DisplayQueries(IServiceProvider serviceProvider, DeviceDiscoverySummary? discovery)
     {
         var example = serviceProvider.GetRequiredService<TelemetryQueryBuilderExample>();
-        var source = discovery is null ? null : SelectTelemetryTarget(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"])?.Source;
+        TelemetrySource? source = null;
+        if (discovery is not null)
+        {
+            foreach (var target in SelectTelemetryTargets(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"], selectedFieldCount: 2))
+            {
+                source = target.Source;
+                break;
+            }
+        }
+
         if (source is null)
         {
             Console.WriteLine("No discovered telemetry source is available yet; showing generic sample queries.");
@@ -286,16 +297,6 @@ internal static class Program
         }
 
         return new SqlServerPersistenceSummary("TelemetryData", persistedCount);
-    }
-
-    private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)
-    {
-        foreach (var target in SelectTelemetryTargets(devices, requestedFields, selectedFieldCount: int.MaxValue))
-        {
-            return (target.Device, target.Source);
-        }
-
-        return null;
     }
 
     private static IEnumerable<(EnirisDevice Device, TelemetrySource Source, string[] Fields)> SelectTelemetryTargets(
