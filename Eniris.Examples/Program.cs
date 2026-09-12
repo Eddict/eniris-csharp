@@ -225,21 +225,41 @@ internal static class Program
         bool chunked,
         CancellationToken cancellationToken)
     {
-        var target = SelectTelemetryTarget(discovery.Devices, config.PreferredTelemetryFields)
-            ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
-
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var selectedFieldCount = chunked ? 2 : 1;
-        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(selectedFieldCount).ToArray();
+        using var targets = SelectTelemetryTargets(
+            discovery.Devices,
+            config.PreferredTelemetryFields,
+            selectedFieldCount,
+            minimumFieldCount: 1).GetEnumerator();
+        if (!targets.MoveNext())
+        {
+            throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
+        }
+
+        var target = targets.Current;
         return chunked
-            ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
-            : await example.RunDirectRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
+            ? await example.RunChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken).ConfigureAwait(false)
+            : await example.RunDirectRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, config.HistoricalQueryLimit, cancellationToken).ConfigureAwait(false);
     }
 
     private static void DisplayQueries(IServiceProvider serviceProvider, DeviceDiscoverySummary? discovery)
     {
         var example = serviceProvider.GetRequiredService<TelemetryQueryBuilderExample>();
-        var source = discovery is null ? null : SelectTelemetryTarget(discovery.Devices, ["actualPowerTot_W", "voltageL1N_V"])?.Source;
+        TelemetrySource? source = null;
+        if (discovery is not null)
+        {
+            using var targets = SelectTelemetryTargets(
+                discovery.Devices,
+                ["actualPowerTot_W", "voltageL1N_V"],
+                selectedFieldCount: 2,
+                minimumFieldCount: 1).GetEnumerator();
+            if (targets.MoveNext())
+            {
+                source = targets.Current.Source;
+            }
+        }
+
         if (source is null)
         {
             Console.WriteLine("No discovered telemetry source is available yet; showing generic sample queries.");
@@ -259,30 +279,56 @@ internal static class Program
         CancellationToken cancellationToken)
     {
         config.SqlServerConnectionString = ResolveRequiredValue("SQL Server connection string", config.SqlServerConnectionString, secret: true);
-        var target = SelectTelemetryTarget(discovery.Devices, config.PreferredTelemetryFields)
-            ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
-
-        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var writer = serviceProvider.GetRequiredService<SqlServerTelemetryWriter>();
-        var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken);
-        return await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
+        var persistedCount = 0;
+        var matchedAny = false;
+
+        foreach (var target in SelectTelemetryTargets(
+            discovery.Devices,
+            config.PreferredTelemetryFields,
+            selectedFieldCount: 2,
+            minimumFieldCount: 1))
+        {
+            matchedAny = true;
+            logger.LogInformation(
+                "Persisting historical telemetry for {DeviceName} ({DeviceId}) source {SourceKey} with fields [{Fields}]",
+                target.Device.Name,
+                target.Device.Id,
+                target.Source.Key,
+                string.Join(", ", target.Fields));
+
+            var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken);
+            var persisted = await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
+            persistedCount += persisted.RowCount;
+        }
+
+        if (!matchedAny)
+        {
+            throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
+        }
+
+        return new SqlServerPersistenceSummary("TelemetryData", persistedCount);
     }
 
-    private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)
+    private static IEnumerable<(EnirisDevice Device, TelemetrySource Source, string[] Fields)> SelectTelemetryTargets(
+        IReadOnlyList<EnirisDevice> devices,
+        IReadOnlyList<string> requestedFields,
+        int selectedFieldCount,
+        int minimumFieldCount)
     {
         foreach (var device in devices.Where(static candidate => candidate.TelemetrySources.Count > 0))
         {
             foreach (var source in device.TelemetrySources)
             {
-                if (SelectFields(source, requestedFields).Count > 0)
+                var fields = SelectFields(source, requestedFields).Take(selectedFieldCount).ToArray();
+                if (fields.Length >= minimumFieldCount)
                 {
-                    return (device, source);
+                    yield return (device, source, fields);
                 }
             }
         }
-
-        return null;
     }
 
     private static IReadOnlyList<string> SelectFields(TelemetrySource source, IReadOnlyList<string> requestedFields)
