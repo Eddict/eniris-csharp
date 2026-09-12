@@ -31,8 +31,9 @@ public sealed class SqlServerTelemetryWriter
     {
         ArgumentNullException.ThrowIfNull(records);
 
-        var materializedRecords = records.ToArray();
-        if (materializedRecords.Length == 0)
+        var batchSize = Math.Max(1, _config.SqlServerBatchSize);
+        using var batches = records.Chunk(batchSize).GetEnumerator();
+        if (!batches.MoveNext())
         {
             return new SqlServerPersistenceSummary(_tableName, 0);
         }
@@ -47,19 +48,26 @@ public sealed class SqlServerTelemetryWriter
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await EnsureTableAsync(connection, cancellationToken).ConfigureAwait(false);
 
-        using var dataTable = CreateDataTable(materializedRecords);
         using var bulkCopy = new SqlBulkCopy(connection)
         {
-            BatchSize = Math.Max(1, _config.SqlServerBatchSize),
+            BatchSize = batchSize,
             DestinationTableName = $"[dbo].[{_tableName}]",
             EnableStreaming = true,
         };
 
         AddColumnMappings(bulkCopy);
 
-        _logger.LogInformation("Persisting {RecordCount} telemetry record(s) into SQL Server table {TableName}", materializedRecords.Length, _tableName);
-        await bulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-        return new SqlServerPersistenceSummary(_tableName, materializedRecords.Length);
+        var persistedCount = 0;
+        do
+        {
+            using var dataTable = CreateDataTable(batches.Current);
+            _logger.LogInformation("Persisting {RecordCount} telemetry record(s) into SQL Server table {TableName}", batches.Current.Length, _tableName);
+            await bulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+            persistedCount += batches.Current.Length;
+        }
+        while (batches.MoveNext());
+
+        return new SqlServerPersistenceSummary(_tableName, persistedCount);
     }
 
     private async Task EnsureTableAsync(SqlConnection connection, CancellationToken cancellationToken)
@@ -80,8 +88,8 @@ public sealed class SqlServerTelemetryWriter
                     [ValueType] NVARCHAR(32) NOT NULL,
                     [Unit] NVARCHAR(64) NULL,
                     [DeviceType] NVARCHAR(255) NULL,
-                    [Timestamp] DATETIME2 NOT NULL,
-                    [RecordedAt] DATETIME2 NOT NULL
+                    [Timestamp] DATETIMEOFFSET NOT NULL,
+                    [RecordedAt] DATETIMEOFFSET NOT NULL
                 );
 
                 CREATE INDEX [IX_{escapedTableName}_DeviceId_Timestamp]
@@ -121,8 +129,8 @@ public sealed class SqlServerTelemetryWriter
         table.Columns.Add(nameof(TelemetryRecord.ValueType), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.Unit), typeof(string));
         table.Columns.Add(nameof(TelemetryRecord.DeviceType), typeof(string));
-        table.Columns.Add(nameof(TelemetryRecord.Timestamp), typeof(DateTime));
-        table.Columns.Add(nameof(TelemetryRecord.RecordedAt), typeof(DateTime));
+        table.Columns.Add(nameof(TelemetryRecord.Timestamp), typeof(DateTimeOffset));
+        table.Columns.Add(nameof(TelemetryRecord.RecordedAt), typeof(DateTimeOffset));
 
         foreach (var record in records)
         {
@@ -136,11 +144,19 @@ public sealed class SqlServerTelemetryWriter
                 record.ValueType,
                 record.Unit is null ? DBNull.Value : record.Unit,
                 record.DeviceType is null ? DBNull.Value : record.DeviceType,
-                record.Timestamp,
-                record.RecordedAt);
+                ToUtcOffset(record.Timestamp),
+                ToUtcOffset(record.RecordedAt));
         }
 
         return table;
+    }
+
+    private static DateTimeOffset ToUtcOffset(DateTime value)
+    {
+        var normalized = value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            : value.ToUniversalTime();
+        return new DateTimeOffset(normalized, TimeSpan.Zero);
     }
 }
 
