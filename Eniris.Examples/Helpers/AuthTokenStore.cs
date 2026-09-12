@@ -63,8 +63,44 @@ public sealed class AuthTokenStore
 
         var directory = Path.GetDirectoryName(_filePath)
             ?? throw new InvalidOperationException($"Could not resolve directory for token file path {_filePath}.");
-        Directory.CreateDirectory(directory);
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(data, SerializerOptions));
+        EnsureTokenDirectory(directory);
+        WriteTokenFile(JsonSerializer.Serialize(data, SerializerOptions));
+    }
+
+    private void EnsureTokenDirectory(string directory)
+    {
+        const UnixFileMode DirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+        if (OperatingSystem.IsWindows())
+        {
+            Directory.CreateDirectory(directory);
+            return;
+        }
+
+        Directory.CreateDirectory(directory, DirectoryMode);
+        new DirectoryInfo(directory).UnixFileMode = DirectoryMode;
+    }
+
+    private void WriteTokenFile(string content)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            File.WriteAllText(_filePath, content);
+            return;
+        }
+
+        const UnixFileMode TokenFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        using var stream = new FileStream(
+            _filePath,
+            new FileStreamOptions
+            {
+                Mode = System.IO.FileMode.Create,
+                Access = FileAccess.Write,
+                Share = FileShare.None,
+                UnixCreateMode = TokenFileMode,
+            });
+        using var writer = new StreamWriter(stream);
+        writer.Write(content);
+        File.SetUnixFileMode(_filePath, TokenFileMode);
     }
 }
 

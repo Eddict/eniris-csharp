@@ -391,13 +391,15 @@ internal static class Program
         IEnirisClient client,
         AuthTokenData storedToken,
         AuthTokenStore tokenStore,
-        ILogger logger,
+        Microsoft.Extensions.Logging.ILogger logger,
         CancellationToken cancellationToken)
     {
         try
         {
             client.SetRefreshToken(storedToken.RefreshToken);
             var accessToken = await client.GetAccessTokenAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+            var renewedAccessToken = accessToken;
+            var wasRenewed = false;
 
             var refreshToken = storedToken.RefreshToken;
             var createdAt = storedToken.RefreshTokenCreatedAt;
@@ -405,6 +407,8 @@ internal static class Program
             {
                 refreshToken = await client.RefreshTokenAsync(cancellationToken).ConfigureAwait(false);
                 createdAt = DateTimeOffset.UtcNow.ToString("O");
+                renewedAccessToken = await client.GetAccessTokenAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                wasRenewed = true;
                 tokenStore.Save(new AuthTokenData
                 {
                     Username = storedToken.Username,
@@ -417,8 +421,8 @@ internal static class Program
             return new AuthenticationSummary(
                 storedToken.RefreshToken,
                 accessToken,
-                refreshToken,
-                accessToken);
+                wasRenewed ? refreshToken : string.Empty,
+                wasRenewed ? renewedAccessToken : string.Empty);
         }
         catch (EnirisAuthError)
         {

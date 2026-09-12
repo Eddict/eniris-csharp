@@ -25,8 +25,12 @@ public static class ResponseFormatter
             "Authentication flow complete:",
             $"  Refresh token (login): issued ({summary.RefreshToken.Length} chars)",
             $"  Access token:          issued ({summary.AccessToken.Length} chars)",
-            $"  Refresh token (renew): issued ({summary.RenewedRefreshToken.Length} chars)",
-            $"  Access token (renew):  issued ({summary.RenewedAccessToken.Length} chars)",
+            string.IsNullOrWhiteSpace(summary.RenewedRefreshToken)
+                ? "  Refresh token (renew): skipped"
+                : $"  Refresh token (renew): issued ({summary.RenewedRefreshToken.Length} chars)",
+            string.IsNullOrWhiteSpace(summary.RenewedAccessToken)
+                ? "  Access token (renew):  skipped"
+                : $"  Access token (renew):  issued ({summary.RenewedAccessToken.Length} chars)",
         ]);
     }
 
