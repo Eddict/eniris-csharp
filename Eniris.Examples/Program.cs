@@ -265,18 +265,17 @@ internal static class Program
         var persistedCount = 0;
         var matchedAny = false;
 
-        foreach (var target in SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields))
+        foreach (var target in SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields, selectedFieldCount: 2))
         {
             matchedAny = true;
-            var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
             logger.LogInformation(
                 "Persisting historical telemetry for {DeviceName} ({DeviceId}) source {SourceKey} with fields [{Fields}]",
                 target.Device.Name,
                 target.Device.Id,
                 target.Source.Key,
-                string.Join(", ", selectedFields));
+                string.Join(", ", target.Fields));
 
-            var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken);
+            var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken);
             var persisted = await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
             persistedCount += persisted.RowCount;
         }
@@ -291,25 +290,27 @@ internal static class Program
 
     private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)
     {
-        foreach (var target in SelectTelemetryTargets(devices, requestedFields))
+        foreach (var target in SelectTelemetryTargets(devices, requestedFields, selectedFieldCount: int.MaxValue))
         {
-            return target;
+            return (target.Device, target.Source);
         }
 
         return null;
     }
 
-    private static IEnumerable<(EnirisDevice Device, TelemetrySource Source)> SelectTelemetryTargets(
+    private static IEnumerable<(EnirisDevice Device, TelemetrySource Source, string[] Fields)> SelectTelemetryTargets(
         IReadOnlyList<EnirisDevice> devices,
-        IReadOnlyList<string> requestedFields)
+        IReadOnlyList<string> requestedFields,
+        int selectedFieldCount)
     {
         foreach (var device in devices.Where(static candidate => candidate.TelemetrySources.Count > 0))
         {
             foreach (var source in device.TelemetrySources)
             {
-                if (SelectFields(source, requestedFields).Count > 0)
+                var fields = SelectFields(source, requestedFields).Take(selectedFieldCount).ToArray();
+                if (fields.Length > 0)
                 {
-                    yield return (device, source);
+                    yield return (device, source, fields);
                 }
             }
         }
