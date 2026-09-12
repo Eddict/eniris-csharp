@@ -1,5 +1,6 @@
 #nullable enable
 using Eniris.Api;
+using Eniris.Configuration;
 using Eniris.Examples.Examples;
 using Eniris.Examples.Helpers;
 using Eniris.Examples.Models;
@@ -203,12 +204,40 @@ internal static class Program
 
     private static async Task<AuthenticationSummary> AuthenticateAsync(IServiceProvider serviceProvider, ExampleConfig config, CancellationToken cancellationToken)
     {
-        var username = ResolveRequiredValue("Eniris username", config.Username);
-        var password = ResolveRequiredValue("Eniris password", config.Password, secret: true);
+        var tokenStore = new AuthTokenStore();
+        var storedToken = tokenStore.Load();
+        var username = ResolveRequiredValue("Eniris username", config.Username ?? storedToken?.Username);
         config.Username = username;
 
+        var client = serviceProvider.GetRequiredService<IEnirisClient>();
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
+
+        if (storedToken is not null &&
+            string.Equals(storedToken.Username, username, StringComparison.OrdinalIgnoreCase))
+        {
+            var cachedAuthentication = await TryAuthenticateWithStoredTokenAsync(
+                client,
+                storedToken,
+                tokenStore,
+                logger,
+                cancellationToken).ConfigureAwait(false);
+            if (cachedAuthentication is not null)
+            {
+                return cachedAuthentication;
+            }
+        }
+
+        var password = ResolveRequiredValue("Eniris password", config.Password, secret: true);
         var example = serviceProvider.GetRequiredService<AuthenticationExample>();
-        return await example.RunAsync(username, password, cancellationToken).ConfigureAwait(false);
+        var authentication = await example.RunAsync(username, password, cancellationToken).ConfigureAwait(false);
+        tokenStore.Save(new AuthTokenData
+        {
+            Username = username,
+            RefreshToken = authentication.RenewedRefreshToken,
+            RefreshTokenCreatedAt = DateTimeOffset.UtcNow.ToString("O"),
+        });
+        logger.LogInformation("Saved Eniris auth state to {Path}", tokenStore.FilePath);
+        return authentication;
     }
 
     private static async Task<DeviceDiscoverySummary> DiscoverAsync(IServiceProvider serviceProvider, CancellationToken cancellationToken)
@@ -356,5 +385,60 @@ internal static class Program
         }
 
         return ConsoleMenu.PromptRequired(label, currentValue, secret);
+    }
+
+    private static async Task<AuthenticationSummary?> TryAuthenticateWithStoredTokenAsync(
+        IEnirisClient client,
+        AuthTokenData storedToken,
+        AuthTokenStore tokenStore,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            client.SetRefreshToken(storedToken.RefreshToken);
+            var accessToken = await client.GetAccessTokenAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            var refreshToken = storedToken.RefreshToken;
+            var createdAt = storedToken.RefreshTokenCreatedAt;
+            if (RefreshTokenNeedsRenewal(storedToken.RefreshTokenCreatedAt))
+            {
+                refreshToken = await client.RefreshTokenAsync(cancellationToken).ConfigureAwait(false);
+                createdAt = DateTimeOffset.UtcNow.ToString("O");
+                tokenStore.Save(new AuthTokenData
+                {
+                    Username = storedToken.Username,
+                    RefreshToken = refreshToken,
+                    RefreshTokenCreatedAt = createdAt,
+                });
+                logger.LogInformation("Renewed and persisted Eniris refresh token");
+            }
+
+            return new AuthenticationSummary(
+                storedToken.RefreshToken,
+                accessToken,
+                refreshToken,
+                accessToken);
+        }
+        catch (EnirisAuthError)
+        {
+            logger.LogInformation("Stored Eniris refresh token is invalid for {Username}, falling back to login", storedToken.Username);
+            return null;
+        }
+    }
+
+    private static bool RefreshTokenNeedsRenewal(string? refreshTokenCreatedAt)
+    {
+        if (string.IsNullOrWhiteSpace(refreshTokenCreatedAt))
+        {
+            return true;
+        }
+
+        if (!DateTimeOffset.TryParse(refreshTokenCreatedAt, out var createdAt))
+        {
+            return true;
+        }
+
+        return DateTimeOffset.UtcNow - createdAt.ToUniversalTime() >= EnirisConstants.RefreshTokenRenewInterval;
     }
 }

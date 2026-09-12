@@ -55,6 +55,7 @@ dotnet run --project Eniris.Examples/Eniris.Examples.csproj
 ```
 
 Configuration can come from `Eniris.Examples/appsettings.json` or environment variables such as `Eniris__Username`, `Eniris__Password`, `Eniris__SqlServerConnectionString`, `Eniris__AuthBaseUri`, and `Eniris__ApiBaseUri`.
+The examples app also persists `username`, `refresh_token`, and `refresh_token_created_at` in `~/.config/eniris/auth.json` so subsequent runs can reuse and renew tokens without prompting for a password every time.
 
 Expected console output includes controller/device hierarchy, latest telemetry timestamps and values, and historical row counts with covered date ranges.
 
