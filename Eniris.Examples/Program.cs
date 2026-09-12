@@ -259,17 +259,49 @@ internal static class Program
         CancellationToken cancellationToken)
     {
         config.SqlServerConnectionString = ResolveRequiredValue("SQL Server connection string", config.SqlServerConnectionString, secret: true);
-        var target = SelectTelemetryTarget(discovery.Devices, config.PreferredTelemetryFields)
-            ?? throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
-
-        var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var writer = serviceProvider.GetRequiredService<SqlServerTelemetryWriter>();
-        var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken);
-        return await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
+        var persistedCount = 0;
+        var matchedAny = false;
+
+        foreach (var target in SelectTelemetryTargets(discovery.Devices, config.PreferredTelemetryFields))
+        {
+            matchedAny = true;
+            var selectedFields = SelectFields(target.Source, config.PreferredTelemetryFields).Take(2).ToArray();
+            logger.LogInformation(
+                "Persisting historical telemetry for {DeviceName} ({DeviceId}) source {SourceKey} with fields [{Fields}]",
+                target.Device.Name,
+                target.Device.Id,
+                target.Source.Key,
+                string.Join(", ", selectedFields));
+
+            var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, selectedFields, range.Start, range.End, cancellationToken);
+            var persisted = await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
+            persistedCount += persisted.RowCount;
+        }
+
+        if (!matchedAny)
+        {
+            throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
+        }
+
+        return new SqlServerPersistenceSummary("TelemetryData", persistedCount);
     }
 
     private static (EnirisDevice Device, TelemetrySource Source)? SelectTelemetryTarget(IReadOnlyList<EnirisDevice> devices, IReadOnlyList<string> requestedFields)
+    {
+        foreach (var target in SelectTelemetryTargets(devices, requestedFields))
+        {
+            return target;
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<(EnirisDevice Device, TelemetrySource Source)> SelectTelemetryTargets(
+        IReadOnlyList<EnirisDevice> devices,
+        IReadOnlyList<string> requestedFields)
     {
         foreach (var device in devices.Where(static candidate => candidate.TelemetrySources.Count > 0))
         {
@@ -277,12 +309,10 @@ internal static class Program
             {
                 if (SelectFields(source, requestedFields).Count > 0)
                 {
-                    return (device, source);
+                    yield return (device, source);
                 }
             }
         }
-
-        return null;
     }
 
     private static IReadOnlyList<string> SelectFields(TelemetrySource source, IReadOnlyList<string> requestedFields)
