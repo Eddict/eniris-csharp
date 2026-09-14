@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace Eniris.Examples.Helpers;
+namespace Eniris.Helpers;
 
 public static class DateRangeHelper
 {

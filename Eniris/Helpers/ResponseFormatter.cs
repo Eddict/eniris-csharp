@@ -5,12 +5,12 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Eniris.Configuration;
 using Eniris.Data;
-using Eniris.Examples.Examples;
-using Eniris.Examples.Services;
+using Eniris.Examples;
+using Eniris.Services;
 using Eniris.Models;
 using Eniris.Telemetry;
 
-namespace Eniris.Examples.Helpers;
+namespace Eniris.Helpers;
 
 public static class ResponseFormatter
 {
@@ -114,7 +114,7 @@ public static class ResponseFormatter
     }
 
     public static string FormatPersistence(SqlServerPersistenceSummary summary) =>
-        $"Persisted {summary.RowCount} telemetry row(s) into dbo.{summary.TableName}.";
+        $"Attempted {summary.AttemptedRowCount} row(s) into dbo.{summary.TableName}; added {summary.AddedRowCount}, ignored {summary.IgnoredRowCount}.";
 
     public static string DescribeField(string field)
     {

@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Eniris.Examples.Helpers;
+namespace Eniris.Helpers;
 
 public sealed class AuthTokenStore
 {

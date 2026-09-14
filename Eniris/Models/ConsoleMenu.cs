@@ -1,7 +1,7 @@
 #nullable enable
 using System.Text;
 
-namespace Eniris.Examples.Models;
+namespace Eniris.Models;
 
 public sealed class ConsoleMenu
 {

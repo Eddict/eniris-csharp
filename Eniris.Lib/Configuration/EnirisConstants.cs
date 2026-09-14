@@ -56,7 +56,8 @@ public static class EnirisConstants
     /// <summary>
     /// Retention policies supported by the SmartgridOne integration.
     /// </summary>
-    public static readonly ReadOnlyCollection<string> RetentionPolicies = Array.AsReadOnly(["rp_one_s", "rp_one_m"]);
+    //public static readonly ReadOnlyCollection<string> RetentionPolicies = Array.AsReadOnly(["rp_one_s", "rp_one_m"]);
+    public static readonly ReadOnlyCollection<string> RetentionPolicies = Array.AsReadOnly(["rp_one_m"]);
 
     /// <summary>
     /// Device node types that are intentionally hidden from the device model.

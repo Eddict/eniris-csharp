@@ -1,11 +1,10 @@
 #nullable enable
 using System.Text.Json.Nodes;
-using Eniris.Examples.Helpers;
-using Eniris.Examples.Models;
+using Eniris.Helpers;
 using Eniris.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Eniris.Examples.Examples;
+namespace Eniris.Examples;
 
 public sealed class DeviceDiscoveryExample
 {

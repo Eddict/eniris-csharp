@@ -1,7 +1,7 @@
 #nullable enable
 using Eniris.Models;
 
-namespace Eniris.Examples.Helpers;
+namespace Eniris.Helpers;
 
 internal static class TelemetryFieldSelection
 {

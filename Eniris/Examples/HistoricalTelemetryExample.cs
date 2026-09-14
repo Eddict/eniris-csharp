@@ -6,7 +6,7 @@ using Eniris.Models;
 using Eniris.Telemetry;
 using Microsoft.Extensions.Logging;
 
-namespace Eniris.Examples.Examples;
+namespace Eniris.Examples;
 
 public sealed class HistoricalTelemetryExample
 {

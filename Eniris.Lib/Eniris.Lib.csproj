@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageId>Eniris</PackageId>
+    <PackageId>Eniris.Lib</PackageId>
     <Description>Reusable .NET client library for the Eniris SmartgridOne authentication and API endpoints.</Description>
   </PropertyGroup>
 

@@ -1,12 +1,12 @@
 #nullable enable
 using System.Globalization;
 using System.Text.Json.Nodes;
-using Eniris.Examples.Helpers;
+using Eniris.Helpers;
 using Eniris.Models;
 using Eniris.Telemetry;
 using Microsoft.Extensions.Logging;
 
-namespace Eniris.Examples.Examples;
+namespace Eniris.Examples;
 
 public sealed class TelemetryQueryBuilderExample
 {
@@ -23,7 +23,7 @@ public sealed class TelemetryQueryBuilderExample
         var start = now.AddDays(-7);
         var sampleSource = source ?? new TelemetrySource(
             measurement: "solarInverterMetrics",
-            retentionPolicy: "rp_one_s",
+            retentionPolicy: "rp_one_m",
             tags: new Dictionary<string, string>(StringComparer.Ordinal) { ["nodeId"] = "inverter-1" },
             database: "site_telemetry");
 

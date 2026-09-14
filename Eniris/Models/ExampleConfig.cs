@@ -1,7 +1,7 @@
 #nullable enable
 using Eniris.Configuration;
 
-namespace Eniris.Examples.Models;
+namespace Eniris.Models;
 
 public sealed class ExampleConfig
 {
@@ -18,6 +18,8 @@ public sealed class ExampleConfig
     public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
     public int SqlServerBatchSize { get; set; } = 1000;
+
+    public int SqlServerBatchSizeLongRange { get; set; } = 5000;
 
     public string[] PreferredTelemetryFields { get; set; } = ["actualPowerTot_W", "voltageL1N_V", "currentL1_A"];
 

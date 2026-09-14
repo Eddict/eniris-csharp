@@ -281,7 +281,7 @@ public sealed class EnirisDevice
             var retentionPolicy = ReadString(raw["retentionPolicy"]) ?? ReadString(raw["retention_policy"]);
             if (string.IsNullOrWhiteSpace(measurement) ||
                 string.IsNullOrWhiteSpace(retentionPolicy) ||
-                !EnirisConstants.RetentionPolicies.Contains(retentionPolicy, StringComparer.Ordinal))
+                !IsAllowedRetentionPolicy(retentionPolicy))
             {
                 continue;
             }
@@ -317,7 +317,7 @@ public sealed class EnirisDevice
                 string.IsNullOrWhiteSpace(measurement) ||
                 string.IsNullOrWhiteSpace(database) ||
                 fields is null ||
-                !EnirisConstants.RetentionPolicies.Contains(retentionPolicy, StringComparer.Ordinal))
+                !IsAllowedRetentionPolicy(retentionPolicy))
             {
                 continue;
             }
@@ -409,7 +409,7 @@ public sealed class EnirisDevice
         {
             var values = arrayPolicy
                 .Select(ReadString)
-                .Where(static item => !string.IsNullOrWhiteSpace(item) && EnirisConstants.RetentionPolicies.Contains(item, StringComparer.Ordinal))
+                .Where(static item => !string.IsNullOrWhiteSpace(item) && IsAllowedRetentionPolicy(item!))
                 .Select(static item => item!)
                 .ToArray();
             if (values.Length > 0)
@@ -419,13 +419,18 @@ public sealed class EnirisDevice
         }
 
         if (ReadString(rawPolicy) is { } singlePolicy &&
-            EnirisConstants.RetentionPolicies.Contains(singlePolicy, StringComparer.Ordinal))
+            IsAllowedRetentionPolicy(singlePolicy))
         {
             return [singlePolicy];
         }
 
-        return EnirisConstants.RetentionPolicies;
+        return EnirisConstants.RetentionPolicies
+            .Where(static policy => IsAllowedRetentionPolicy(policy))
+            .ToArray();
     }
+
+    private static bool IsAllowedRetentionPolicy(string retentionPolicy) =>
+        EnirisConstants.RetentionPolicies.Contains(retentionPolicy, StringComparer.Ordinal);
 
     private static JsonObject? NamespaceFromProperties(JsonObject properties)
     {

@@ -1,11 +1,10 @@
 #nullable enable
 using Eniris.Api;
 using Eniris.Configuration;
-using Eniris.Examples.Examples;
-using Eniris.Examples.Helpers;
-using Eniris.Examples.Models;
-using Eniris.Examples.Services;
+using Eniris.Examples;
+using Eniris.Helpers;
 using Eniris.Models;
+using Eniris.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,6 +25,7 @@ internal static class Program
         ("6", "Show telemetry query builder examples (generic or discovered source)"),
         ("7", "Run complete walkthrough"),
         ("8", "Fetch 30-day historical telemetry and persist it to SQL Server"),
+        ("9", "Fetch 365-day historical telemetry and persist it to SQL Server"),
         ("0", "Exit"),
     ];
 
@@ -74,7 +74,7 @@ internal static class Program
 
         using var host = builder.Build();
         using var scope = host.Services.CreateScope();
-        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Program");
 
         AuthenticationSummary? authentication = null;
         DeviceDiscoverySummary? discovery = null;
@@ -156,8 +156,24 @@ internal static class Program
                             discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
                             var sqlRange = DateRangeHelper.LastDays(30);
                             var persisted = await PersistHistoricalAsync(scope.ServiceProvider, discovery, exampleConfig, sqlRange, cancellationTokenSource.Token).ConfigureAwait(false);
-                            Console.WriteLine($"Fetched and persisted {persisted.RowCount} historical telemetry row(s) for {sqlRange.Label}.");
+                            Console.WriteLine($"Fetched and persisted {persisted.AttemptedRowCount} historical telemetry row(s) for {sqlRange.Label}.");
                             Console.WriteLine(ResponseFormatter.FormatPersistence(persisted));
+                            break;
+
+                        case "9":
+                            authentication = await EnsureAuthenticatedAsync(scope.ServiceProvider, exampleConfig, authentication, cancellationTokenSource.Token).ConfigureAwait(false);
+                            discovery ??= await DiscoverAsync(scope.ServiceProvider, cancellationTokenSource.Token).ConfigureAwait(false);
+                            var yearlySqlRange = DateRangeHelper.LastDays(365);
+                            var yearlyPersisted = await PersistHistoricalAsync(
+                                scope.ServiceProvider,
+                                discovery,
+                                exampleConfig,
+                                yearlySqlRange,
+                                cancellationTokenSource.Token,
+                                batchSizeOverride: exampleConfig.SqlServerBatchSizeLongRange,
+                                showProgress: true).ConfigureAwait(false);
+                            Console.WriteLine($"Fetched and persisted {yearlyPersisted.AttemptedRowCount} historical telemetry row(s) for {yearlySqlRange.Label}.");
+                            Console.WriteLine(ResponseFormatter.FormatPersistence(yearlyPersisted));
                             break;
                     }
                 }
@@ -210,7 +226,7 @@ internal static class Program
         config.Username = username;
 
         var client = serviceProvider.GetRequiredService<IEnirisClient>();
-        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Program");
 
         if (storedToken is not null &&
             string.Equals(storedToken.Username, username, StringComparison.OrdinalIgnoreCase))
@@ -312,40 +328,114 @@ internal static class Program
         DeviceDiscoverySummary discovery,
         ExampleConfig config,
         ExampleDateRange range,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int? batchSizeOverride = null,
+        bool showProgress = false)
     {
         config.SqlServerConnectionString = ResolveRequiredValue("SQL Server connection string", config.SqlServerConnectionString, secret: true);
         var example = serviceProvider.GetRequiredService<HistoricalTelemetryExample>();
         var writer = serviceProvider.GetRequiredService<SqlServerTelemetryWriter>();
-        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Examples.Program");
-        var persistedCount = 0;
-        var matchedAny = false;
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Eniris.Program");
 
-        foreach (var target in SelectTelemetryTargets(
+        var targets = SelectTelemetryTargets(
             discovery.Devices,
             config.PreferredTelemetryFields,
             selectedFieldCount: 2,
-            minimumFieldCount: 1))
-        {
-            matchedAny = true;
-            logger.LogInformation(
-                "Persisting historical telemetry for {DeviceName} ({DeviceId}) source {SourceKey} with fields [{Fields}]",
-                target.Device.Name,
-                target.Device.Id,
-                target.Source.Key,
-                string.Join(", ", target.Fields));
+            minimumFieldCount: 1).ToArray();
 
-            var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, range.Start, range.End, cancellationToken);
-            var persisted = await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
-            persistedCount += persisted.RowCount;
-        }
-
-        if (!matchedAny)
+        if (targets.Length == 0)
         {
             throw new InvalidOperationException("No discovered device exposed a telemetry source for the requested fields.");
         }
 
-        return new SqlServerPersistenceSummary("TelemetryData", persistedCount);
+        var attemptedCount = 0;
+        var addedCount = 0;
+        var ignoredCount = 0;
+
+        var originalBatchSize = config.SqlServerBatchSize;
+        if (batchSizeOverride is int overrideBatchSize)
+        {
+            config.SqlServerBatchSize = Math.Max(1, overrideBatchSize);
+        }
+
+        if (showProgress)
+        {
+            Console.WriteLine($"Starting SQL persistence for range {range.Start:o} -> {range.End:o}; targets={targets.Length}; batchSize={config.SqlServerBatchSize}.");
+        }
+
+        try
+        {
+            for (var index = 0; index < targets.Length; index++)
+            {
+                var target = targets[index];
+                var progressIndex = index + 1;
+                var effectiveStart = range.Start;
+
+                var minimumPersistedTimestamp = await writer.GetMinimumFieldMaxTimestampAsync(
+                    (int)target.Device.Id,
+                    target.Source.Measurement,
+                    target.Source.RetentionPolicy,
+                    target.Fields,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (minimumPersistedTimestamp.HasValue)
+                {
+                    var nextStart = minimumPersistedTimestamp.Value.AddTicks(1);
+                    if (nextStart > effectiveStart)
+                    {
+                        effectiveStart = nextStart;
+                    }
+                }
+
+                if (effectiveStart >= range.End)
+                {
+                    logger.LogInformation(
+                        "Skipping historical persistence for {DeviceName} ({DeviceId}) source {SourceKey} because data already exists through {ExistingEnd}",
+                        target.Device.Name,
+                        target.Device.Id,
+                        target.Source.Key,
+                        minimumPersistedTimestamp?.ToString("o") ?? "n/a");
+
+                    if (showProgress)
+                    {
+                        Console.WriteLine($"[{progressIndex}/{targets.Length}] Skipped | {target.Device.Name} ({target.Device.Id}) | source={target.Source.Key} | effectiveRange={effectiveStart:o} -> {range.End:o} | existingThrough={minimumPersistedTimestamp?.ToString("o") ?? "n/a"}");
+                    }
+
+                    continue;
+                }
+
+                logger.LogInformation(
+                    "Persisting historical telemetry for {DeviceName} ({DeviceId}) source {SourceKey} with fields [{Fields}] range {Start} -> {End}",
+                    target.Device.Name,
+                    target.Device.Id,
+                    target.Source.Key,
+                    string.Join(", ", target.Fields),
+                    effectiveStart,
+                    range.End);
+
+                if (showProgress)
+                {
+                    Console.WriteLine($"[{progressIndex}/{targets.Length}] Persisting {target.Device.Name} ({target.Device.Id}) | source={target.Source.Key} | fields=[{string.Join(", ", target.Fields)}] | range={effectiveStart:o} -> {range.End:o}");
+                }
+
+                var batches = example.StreamChunkedRangeQueryAsync(target.Device, target.Source, target.Fields, effectiveStart, range.End, cancellationToken);
+                var persisted = await writer.PersistBatchesAsync(batches, cancellationToken).ConfigureAwait(false);
+                attemptedCount += persisted.AttemptedRowCount;
+                addedCount += persisted.AddedRowCount;
+                ignoredCount += persisted.IgnoredRowCount;
+
+                if (showProgress)
+                {
+                    Console.WriteLine($"[{progressIndex}/{targets.Length}] Done | effectiveRange={effectiveStart:o} -> {range.End:o} | attempted={persisted.AttemptedRowCount}, added={persisted.AddedRowCount}, ignored={persisted.IgnoredRowCount} | totals: attempted={attemptedCount}, added={addedCount}, ignored={ignoredCount}");
+                }
+            }
+        }
+        finally
+        {
+            config.SqlServerBatchSize = originalBatchSize;
+        }
+
+        return new SqlServerPersistenceSummary("TelemetryData", attemptedCount, addedCount, ignoredCount);
     }
 
     private static IEnumerable<(EnirisDevice Device, TelemetrySource Source, string[] Fields)> SelectTelemetryTargets(
